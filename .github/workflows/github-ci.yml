@@ -28,11 +28,8 @@ jobs:
 
   tests:
     env:
-      FLAGGERAPI_POSTGRES_HOSTNAME: "localhost"
-      FLAGGERAPI_POSTGRES_PORT: "5432"
       FLAGGERAPI_POSTGRES_USERNAME: "postgres"
       FLAGGERAPI_POSTGRES_PASSWORD: "pgpassword"
-      FLAGGERAPI_POSTGRES_DATABASE_NAME: "flaggerdb"
 
     runs-on: ubuntu-latest
 
