@@ -1,0 +1,8 @@
+Flagger - Activate Your Account
+
+Glad to have you on board, {{ .RecipientEmail }}!
+Flagger is the platform that unifies feature flag automation.
+
+One last thing we need from you: activate your account! Just click the link below to activate your account:
+
+{{ .ActivationURL }}

@@ -1,0 +1,44 @@
+CREATE TABLE "User" (
+    uuid UUID UNIQUE NOT NULL PRIMARY KEY,
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password CHAR(60) NOT NULL,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    is_active BOOLEAN NOT NULL DEFAULT FALSE,
+    is_superuser BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
+);
+
+Create TABLE APIKey (
+    id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    user_uuid UUID NOT NULL REFERENCES "User"(uuid),
+    prefix CHAR(8),
+    hashed_key VARCHAR(150),
+    name VARCHAR(150) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+    expires_at TIMESTAMP DEFAULT NULL,
+    UNIQUE (user_uuid, name)
+);
+
+Create TABLE Flag (
+    id INT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+    user_uuid UUID NOT NULL REFERENCES "User"(uuid),
+    name VARCHAR(150) NOT NULL,
+    is_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+    updated_at TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC'),
+    UNIQUE (user_uuid, name)
+);
+
+CREATE OR REPLACE FUNCTION trigger_set_timestamp()
+    RETURNS TRIGGER AS $$
+    BEGIN
+        NEW.updated_at = (CURRENT_TIMESTAMP AT TIME ZONE 'UTC');
+        RETURN NEW;
+    END;
+    $$ LANGUAGE plpgsql;
+
+CREATE TRIGGER Flag_updated_at
+    BEFORE UPDATE ON Flag
+    FOR EACH ROW
+    EXECUTE PROCEDURE trigger_set_timestamp();

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <meta name="x-apple-disable-message-reformatting">
+        <title>Flagger - Activate Your Account</title>
+    </head>
+    <body width="100%">
+        <p style="text-align: center;">
+            <img src="https://www.reshot.com/preview-assets/icons/U5RMYVJCA4/flag-U5RMYVJCA4.svg" width="200" />
+        </p>
+        <div style="background-color: #ADEBEB; border-radius: 20px; padding: 2px 12px 12px 12px;">
+            <h2 style="font-family: sans-serif; text-align: center;">
+                Glad to have you on board, {{ .RecipientEmail }}!
+            </h2>
+            <h3 style="font-family: sans-serif; text-align: center;">
+                Flagger is the platform that unifies feature flag automation.
+            </h3>
+            <p style="font-family: sans-serif; text-align: center;">
+                One last thing we need from you: activate your account!
+            </p>
+            <p style="font-family: sans-serif; text-align: center;">
+                <a style="color: #FDFDFD; background-color: #19194D; font-family: sans-serif; text-align: center; text-decoration: none; border-radius: 8px; width: 100px; padding: 6px 8px 7px 8px;" href="{{ .ActivationURL }}">
+                    Activate Account
+                </a>
+            </p>
+        </div>
+        <p style="font-family: sans-serif; font-size: small; text-align: center;">
+            If the link above does not work, try going directly to the following URL: {{ .ActivationURL }}
+        </p>
+    </body>
+</html>
