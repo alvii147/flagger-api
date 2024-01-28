@@ -192,6 +192,7 @@ func TestJWTAuthMiddleware(t *testing.T) {
 
 			var responseBody map[string]interface{}
 			err = json.Unmarshal(responseBodyBytes, &responseBody)
+			require.NoError(t, err)
 
 			require.Equal(t, testcase.wantStatusCode, result.StatusCode)
 
@@ -321,6 +322,7 @@ func TestAPIKeyAuthMiddleware(t *testing.T) {
 
 			var responseBody map[string]interface{}
 			err = json.Unmarshal(responseBodyBytes, &responseBody)
+			require.NoError(t, err)
 
 			require.Equal(t, testcase.wantStatusCode, result.StatusCode)
 

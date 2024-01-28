@@ -376,6 +376,7 @@ func TestServiceRefreshJWTSuccess(t *testing.T) {
 	require.NoError(t, err)
 
 	accessToken, err := svc.RefreshJWT(context.Background(), refreshToken)
+	require.NoError(t, err)
 
 	claims := &api.AuthJWTClaims{}
 	parsedAccessToken, err := jwt.ParseWithClaims(accessToken, claims, func(t *jwt.Token) (interface{}, error) {
