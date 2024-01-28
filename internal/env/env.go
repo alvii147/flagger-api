@@ -8,7 +8,7 @@ import (
 )
 
 // Config represents config variables for the server.
-// Each field can be overriden using environment variables defined in field tags.
+// Each field can be overridden using environment variables defined in field tags.
 type Config struct {
 	Hostname                string `env:"FLAGGERAPI_HOSTNAME"`
 	Port                    int    `env:"FLAGGERAPI_PORT"`
@@ -71,7 +71,7 @@ func defaultConfig() *Config {
 }
 
 // NewConfig reads environment variables and returns a new config,
-// overriden by environment variables where possible.
+// overridden by environment variables where possible.
 func NewConfig() *Config {
 	config := defaultConfig()
 
