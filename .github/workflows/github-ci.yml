@@ -30,7 +30,7 @@ jobs:
     env:
       FLAGGERAPI_POSTGRES_HOSTNAME: "localhost"
       FLAGGERAPI_POSTGRES_PORT: "5432"
-      FLAGGERAPI_POSTGRES_USERNAME: "pguser"
+      FLAGGERAPI_POSTGRES_USERNAME: "postgres"
       FLAGGERAPI_POSTGRES_PASSWORD: "pgpassword"
       FLAGGERAPI_POSTGRES_DATABASE_NAME: "flaggerdb"
 
@@ -40,7 +40,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: "pguser"
+          POSTGRES_USER: "postgres"
           POSTGRES_PASSWORD: "pgpassword"
           POSTGRES_DB: "flaggerdb"
         ports:
