@@ -19,14 +19,17 @@ jobs:
         go-version: '1.20'
 
     - name: Run Go vet
-      run: go vet ./...
+      run: |
+        go vet ./...
 
     - name: Run Go fmt
-      run: (gofmt -l . | grep -v vendor/ && exit 1 || exit 0)
+      run: |
+        (gofmt -l . | grep -v vendor/ && exit 1 || exit 0)
 
   tests:
     env:
       FLAGGERAPI_POSTGRES_HOSTNAME: "postgres"
+      FLAGGERAPI_POSTGRES_PORT: "5432"
       FLAGGERAPI_POSTGRES_USERNAME: "pguser"
       FLAGGERAPI_POSTGRES_PASSWORD: "pgpassword"
 
@@ -53,5 +56,10 @@ jobs:
       with:
         go-version: '1.20'
 
+    - name: Check PostgreSQL connection
+      run: |
+        pg_isready --host=${FLAGGERAPI_POSTGRES_HOSTNAME} --username=${FLAGGERAPI_POSTGRES_USERNAME} --port=${FLAGGERAPI_POSTGRES_PORT}
+
     - name: Run unit tests with coverage
-      run: VERBOSE=1 make cover
+      run: |
+        VERBOSE=1 make cover
