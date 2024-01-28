@@ -58,15 +58,6 @@ jobs:
       with:
         go-version: '1.20'
 
-    - name: Create test database
+    - name: Run unit tests with coverage
       run: |
-        PGPASSWORD=${{env.FLAGGERAPI_POSTGRES_PASSWORD}} psql --username=${{env.FLAGGERAPI_POSTGRES_USERNAME}} --host=${{env.FLAGGERAPI_POSTGRES_HOSTNAME}} --port=${{env.FLAGGERAPI_POSTGRES_PORT}} --file=db/create_test_db.sql
-        PGPASSWORD=${{env.FLAGGERAPI_POSTGRES_PASSWORD}} psql --username=${{env.FLAGGERAPI_POSTGRES_USERNAME}} --host=${{env.FLAGGERAPI_POSTGRES_HOSTNAME}} --port=${{env.FLAGGERAPI_POSTGRES_PORT}} --dbname=test_${{env.FLAGGERAPI_POSTGRES_DATABASE_NAME}} --file=db/create_tables.sql
-
-    - name: Run tests
-      run: |
-        FLAGGERAPI_POSTGRES_DATABASE_NAME=test_${{env.FLAGGERAPI_POSTGRES_DATABASE_NAME}} FLAGGERAPI_MAIL_CLIENT_TYPE=inmem go test -coverprofile coverage.out ./...
-
-    - name: Print coverage report
-      run: |
-        go tool cover -func coverage.out
+        VERBOSE=1 make cover
