@@ -26,7 +26,8 @@ jobs:
 
   tests:
     env:
-      FLAGGERAPI_POSTGRES_USERNAME: "postgres"
+      FLAGGERAPI_POSTGRES_HOSTNAME: "postgres"
+      FLAGGERAPI_POSTGRES_USERNAME: "pguser"
       FLAGGERAPI_POSTGRES_PASSWORD: "pgpassword"
 
     runs-on: ubuntu-latest
@@ -35,7 +36,7 @@ jobs:
       postgres:
         image: postgres:15
         env:
-          POSTGRES_USER: "postgres"
+          POSTGRES_USER: "pguser"
           POSTGRES_PASSWORD: "pgpassword"
         ports: ['5432:5432']
         options: >-
