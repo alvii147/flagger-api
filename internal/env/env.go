@@ -49,7 +49,7 @@ func defaultConfig() *Config {
 	return &Config{
 		Hostname:                "localhost",
 		Port:                    8080,
-		SecretKey:               "deadbeef",
+		SecretKey:               "DEADBEEF",
 		HashingCost:             14,
 		FrontendBaseURL:         "http://localhost:3000",
 		FrontendActivationRoute: "/signup/activate/%s",
