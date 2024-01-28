@@ -58,7 +58,7 @@ jobs:
 
     - name: Check PostgreSQL connection
       run: |
-        pg_isready --host=${FLAGGERAPI_POSTGRES_HOSTNAME} --username=${FLAGGERAPI_POSTGRES_USERNAME} --port=${FLAGGERAPI_POSTGRES_PORT}
+        pg_isready --host=${{env.FLAGGERAPI_POSTGRES_HOSTNAME}} --username=${{env.FLAGGERAPI_POSTGRES_USERNAME}} --port=${{env.FLAGGERAPI_POSTGRES_PORT}}
 
     - name: Run unit tests with coverage
       run: |
