@@ -32,6 +32,7 @@ jobs:
       FLAGGERAPI_POSTGRES_PORT: "5432"
       FLAGGERAPI_POSTGRES_USERNAME: "pguser"
       FLAGGERAPI_POSTGRES_PASSWORD: "pgpassword"
+      FLAGGERAPI_POSTGRES_DATABASE_NAME: "flaggerdb"
 
     runs-on: ubuntu-latest
 
@@ -57,10 +58,15 @@ jobs:
       with:
         go-version: '1.20'
 
-    - name: Check PostgreSQL connection
+    - name: Create test database
       run: |
-        pg_isready --host=${{env.FLAGGERAPI_POSTGRES_HOSTNAME}} --username=${{env.FLAGGERAPI_POSTGRES_USERNAME}} --port=${{env.FLAGGERAPI_POSTGRES_PORT}}
+        PGPASSWORD=${{env.FLAGGERAPI_POSTGRES_PASSWORD}} psql --username=${{env.FLAGGERAPI_POSTGRES_USERNAME}} --file=db/create_test_db.sql
+        PGPASSWORD=${{env.FLAGGERAPI_POSTGRES_PASSWORD}} psql --username=${{env.FLAGGERAPI_POSTGRES_USERNAME}} --dbname=test_${{env.FLAGGERAPI_POSTGRES_DATABASE_NAME}} --file=db/create_tables.sql
 
-    - name: Run unit tests with coverage
+    - name: Run tests
       run: |
-        VERBOSE=1 make cover
+        FLAGGERAPI_POSTGRES_DATABASE_NAME=test_${{env.FLAGGERAPI_POSTGRES_DATABASE_NAME}} FLAGGERAPI_MAIL_CLIENT_TYPE=inmem go test -coverprofile coverage.out ./...
+
+    - name: Print coverage report
+      run: |
+        go tool cover -func coverage.out
