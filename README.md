@@ -6,6 +6,12 @@
     <strong><i>Flagger API</i></strong> is the backend REST API that serves <strong><i>Flagger</i></strong>, the platform that unifies feature flag automation.
 </p>
 
+<div align="center">
+
+[![](https://img.shields.io/github/actions/workflow/status/alvii147/flagger-api/github-ci.yml?branch=master&label=githubci&logo=github)](https://github.com/alvii147/flagger-api/actions) [![](https://goreportcard.com/badge/github.com/alvii147/flagger-api)](https://goreportcard.com/badge/github.com/alvii147/flagger-api)
+
+</div>
+
 ## Installation
 
 ### :one: [Install PostgreSQL](https://www.postgresql.org/download/):
@@ -95,15 +101,15 @@ make cover
 
 Route | Method | Authentication | Description
 --- | --- | --- | ---
-`/auth/users` | `POST` | None | Create user
-`/auth/users/activate` | `POST` | None | Activate user
+`/auth/users` | `POST` | - | Create user
+`/auth/users/activate` | `POST` | - | Activate user
 `/auth/users/me` | `GET` | JWT | Retrieve current user
-`/api/auth/users/me` | `GET` | API Key | Retrieve current user
-`/auth/tokens` | `POST` | None | Create access and refresh JWTs
-`/auth/tokens/refresh` | `POST` | None | Refresh JWT
+`/auth/tokens` | `POST` | - | Create access and refresh JWTs
+`/auth/tokens/refresh` | `POST` | - | Refresh JWT
 `/auth/api-keys` | `GET` | JWT | List all API keys
 `/auth/api-keys` | `POST` | JWT | Create new API key
 `/auth/api-keys/:id` | `DELETE` | JWT | Delete API key
+`/api/auth/users/me` | `GET` | API Key | Retrieve current user
 
 ### Create User
 
