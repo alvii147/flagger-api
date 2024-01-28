@@ -1,5 +1,5 @@
 <p align="center">
-    <img alt="Flagger Logo" src="docs/img/logo512.png" width=400 />
+    <img alt="Flagger Logo" src="docs/img/logo512.png" width=350 />
 </p>
 
 <p align="center">
@@ -58,17 +58,162 @@ make server
 You should see a server log entry indicating that the server has been launched successfully:
 
 ```
-[I] 2024/01/28 21:36:29 ~/flagger-api/internal/server/controller.go:59: Server running on localhost:8080
+[I] 2006/01/02 15:04:05 ~/flagger-api/internal/server/controller.go:42: Server running on localhost:8080
 ```
 
 To terminate the server, use `Ctrl+C`.
 
 ## Testing
 
-### Unit Tests
-
 To run all unit tests, run the following make command:
 
 ```bash
 make test
+```
+
+Use the `VERBOSE` option to enable verbose test logging:
+
+```bash
+VERBOSE=1 make test
+```
+
+To run specific tests, specify a regular expression that matches the desired test names using the `REGEX` option:
+
+```bash
+REGEX=TestName make test
+```
+
+To run unit tests along with the code coverage report, run the following make command:
+
+```bash
+make cover
+```
+
+## Authentication
+
+### Endpoints
+
+Route | Method | Authentication | Description
+--- | --- | --- | ---
+`/auth/users` | `POST` | None | Create user
+`/auth/users/activate` | `POST` | None | Activate user
+`/auth/users/me` | `GET` | JWT | Retrieve current user
+`/api/auth/users/me` | `GET` | API Key | Retrieve current user
+`/auth/tokens` | `POST` | None | Create access and refresh JWTs
+`/auth/tokens/refresh` | `POST` | None | Refresh JWT
+`/auth/api-keys` | `GET` | JWT | List all API keys
+`/auth/api-keys` | `POST` | JWT | Create new API key
+`/auth/api-keys/:id` | `DELETE` | JWT | Delete API key
+
+### Create User
+
+Create a new user using email, password, first name and last name:
+
+```bash
+curl \
+-X POST \
+-d '{"email": "michael.scott@dundermifflin.com", "password": "ideclarebankruptcy", "first_name": "Michael", "last_name": "Scott"}' \
+--url "localhost:8080/auth/users"
+```
+
+This should returned the details of the created user:
+
+```json
+{
+    "email": "michael.scott@dundermifflin.com",
+    "first_name": "Michael",
+    "last_name": "Scott",
+    "created_at": "2024-01-27T02:09:27.918253Z"
+}
+```
+
+### Activate User
+
+Once a user is created, it is in a deactivated state. The user should get an email of the following form:
+
+```
+Flagger - Activate Your Account
+
+Glad to have you on board, michael.scott@dundermifflin.com!
+Flagger is the platform that unifies feature flag automation.
+
+One last thing we need from you: activate your account! Just click the link below to activate your account:
+
+http://localhost:3000/signup/activate/<activation-token>
+```
+
+If `FLAGGERAPI_MAIL_CLIENT_TYPE` is set to `console` (which is the default), the entire email templates should be printed to the console.
+
+To activate the user, extract the activation token from the email template and replace the `<activation-token>` placeholder with it in the following request:
+
+```bash
+curl \
+-X POST \
+-d '{"token": "<activation-token>"}'
+--url "localhost:8080/auth/users/activate"
+```
+
+### Authenticate User
+
+One created and activated, the user can be authenticated:
+
+```bash
+curl \
+-X POST \
+-d '{"email": "michael.scott@dundermifflin.com", "password": "ideclarebankruptcy"}'
+--url "localhost:8080/auth/tokens"
+```
+
+This should produce access and refresh tokens in the form of JWTs for the authenticated user:
+
+```json
+{
+    "access": "<access-token>",
+    "refresh": "<refresh-token>"
+}
+```
+
+The access token can be used in the authorization header to keep the user authenticated:
+
+```bash
+curl ... -H "Authorization: Bearer <access-token>"
+```
+
+After 5 minutes (or however long `FLAGGERAPI_AUTH_ACCESS_LIFETIME` is set to), the access token will expire and will no longer be usable, after which the refresh token can be used to generate a new access token:
+
+```bash
+curl \
+-X POST \
+-d '{"refresh": "<refresh-token>"}'
+--url "localhost:8080/auth/tokens/refresh"
+```
+
+This should produce a new access token:
+
+```json
+{
+    "access": "<access-token>"
+}
+```
+
+## Retrieve Current User
+
+The currently authenticated user can be retrieved using the access token produced in the last step:
+
+```bash
+curl \
+-X GET \
+-H "Authorization: Bearer <access-token>" \
+--url "localhost:8080/auth/users/me"
+```
+
+This should return the current user's data:
+
+```json
+{
+    "email": "michael.scott@dundermifflin.com",
+    "first_name": "Michael",
+    "last_name": "Scott",
+    "created_at": "2024-01-27T02:09:27.918253Z"
+}
 ```
