@@ -60,8 +60,8 @@ jobs:
 
     - name: Create test database
       run: |
-        PGPASSWORD=${{env.FLAGGERAPI_POSTGRES_PASSWORD}} psql --username=${{env.FLAGGERAPI_POSTGRES_USERNAME}} --file=db/create_test_db.sql
-        PGPASSWORD=${{env.FLAGGERAPI_POSTGRES_PASSWORD}} psql --username=${{env.FLAGGERAPI_POSTGRES_USERNAME}} --dbname=test_${{env.FLAGGERAPI_POSTGRES_DATABASE_NAME}} --file=db/create_tables.sql
+        PGPASSWORD=${{env.FLAGGERAPI_POSTGRES_PASSWORD}} psql --username=${{env.FLAGGERAPI_POSTGRES_USERNAME}} --host=${{env.FLAGGERAPI_POSTGRES_HOSTNAME}} --port=$${{env.FLAGGERAPI_POSTGRES_PORT}} --file=db/create_test_db.sql
+        PGPASSWORD=${{env.FLAGGERAPI_POSTGRES_PASSWORD}} psql --username=${{env.FLAGGERAPI_POSTGRES_USERNAME}} --host=${{env.FLAGGERAPI_POSTGRES_HOSTNAME}} --port=$${{env.FLAGGERAPI_POSTGRES_PORT}} --dbname=test_${{env.FLAGGERAPI_POSTGRES_DATABASE_NAME}} --file=db/create_tables.sql
 
     - name: Run tests
       run: |
