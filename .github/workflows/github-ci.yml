@@ -28,7 +28,7 @@ jobs:
 
   tests:
     env:
-      FLAGGERAPI_POSTGRES_HOSTNAME: "postgres"
+      FLAGGERAPI_POSTGRES_HOSTNAME: "localhost"
       FLAGGERAPI_POSTGRES_PORT: "5432"
       FLAGGERAPI_POSTGRES_USERNAME: "pguser"
       FLAGGERAPI_POSTGRES_PASSWORD: "pgpassword"
@@ -37,11 +37,12 @@ jobs:
 
     services:
       postgres:
-        image: postgres:14
+        image: postgres:15
         env:
           POSTGRES_USER: "pguser"
           POSTGRES_PASSWORD: "pgpassword"
-        ports: ['5432:5432']
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
