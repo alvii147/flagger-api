@@ -1,4 +1,4 @@
-name: Go GitHub CI
+name: GitHub CI
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
 
   tests:
     env:
-      FLAGGERAPI_POSTGRES_USERNAM: "postgres"
+      FLAGGERAPI_POSTGRES_USERNAME: "postgres"
       FLAGGERAPI_POSTGRES_PASSWORD: "pgpassword"
 
     runs-on: ubuntu-latest
