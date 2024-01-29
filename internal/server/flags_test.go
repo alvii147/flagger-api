@@ -199,6 +199,12 @@ func TestFlagFlow(t *testing.T) {
 	err = json.NewDecoder(res.Body).Decode(&createFlagResp)
 	require.NoError(t, err)
 
+	require.Equal(t, user.UUID, createFlagResp.UserUUID)
+	require.Equal(t, "my-flag", createFlagResp.Name)
+	require.False(t, createFlagResp.IsEnabled)
+	testkit.RequireTimeAlmostEqual(t, flagCreatedAt, createFlagResp.CreatedAt)
+	testkit.RequireTimeAlmostEqual(t, flagCreatedAt, createFlagResp.UpdatedAt)
+
 	req, err = http.NewRequest(
 		http.MethodGet,
 		srv.URL+"/flags",

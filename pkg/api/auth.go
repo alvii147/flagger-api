@@ -38,6 +38,7 @@ type CreateUserRequest struct {
 
 // CreateUserResponse represents the response body for create User requests.
 type CreateUserResponse struct {
+	UUID      string    `json:"uuid"`
 	Email     string    `json:"email"`
 	FirstName string    `json:"first_name"`
 	LastName  string    `json:"last_name"`
@@ -51,6 +52,7 @@ type ActivateUserRequest struct {
 
 // GetUserMeResponse represents the request body for get current User requests.
 type GetUserMeResponse struct {
+	UUID      string    `json:"uuid"`
 	Email     string    `json:"email"`
 	FirstName string    `json:"first_name"`
 	LastName  string    `json:"last_name"`
@@ -90,7 +92,6 @@ type CreateAPIKeyResponse struct {
 	ID        int              `json:"id"`
 	RawKey    string           `json:"raw_key"`
 	UserUUID  string           `json:"user_uuid"`
-	Prefix    string           `json:"prefix"`
 	Name      string           `json:"name"`
 	CreatedAt time.Time        `json:"created_at"`
 	ExpiresAt pgtype.Timestamp `json:"expires_at"`

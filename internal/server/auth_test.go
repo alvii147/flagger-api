@@ -213,6 +213,7 @@ func TestAuthFlow(t *testing.T) {
 	err = json.NewDecoder(res.Body).Decode(&getUserMeResp)
 	require.NoError(t, err)
 
+	require.Equal(t, createUserResp.UUID, getUserMeResp.UUID)
 	require.Equal(t, email, getUserMeResp.Email)
 	require.Equal(t, firstName, getUserMeResp.FirstName)
 	require.Equal(t, lastName, getUserMeResp.LastName)
@@ -291,6 +292,18 @@ func TestAPIKeyFlow(t *testing.T) {
 	var createAPIKeyResp api.CreateAPIKeyResponse
 	err = json.NewDecoder(res.Body).Decode(&createAPIKeyResp)
 	require.NoError(t, err)
+
+	require.Equal(t, user.UUID, createAPIKeyResp.UserUUID)
+	require.Equal(t, "MyAPIKey", createAPIKeyResp.Name)
+	testkit.RequireTimeAlmostEqual(t, apiKeyCreatedAt, createAPIKeyResp.CreatedAt)
+	testkit.RequirePGTimestampAlmostEqual(
+		t,
+		pgtype.Timestamp{
+			Time:  apiKeyExpiresAt,
+			Valid: true,
+		},
+		createAPIKeyResp.ExpiresAt,
+	)
 
 	req, err = http.NewRequest(
 		http.MethodGet,

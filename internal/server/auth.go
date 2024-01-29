@@ -84,6 +84,7 @@ func (ctrl *controller) HandleCreateUser(w *httputils.ResponseWriter, r *http.Re
 	}
 
 	resp := &api.CreateUserResponse{
+		UUID:      user.UUID,
 		Email:     user.Email,
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
@@ -182,6 +183,7 @@ func (ctrl *controller) HandleGetUserMe(w *httputils.ResponseWriter, r *http.Req
 	}
 
 	resp := &api.GetUserMeResponse{
+		UUID:      user.UUID,
 		Email:     user.Email,
 		FirstName: user.FirstName,
 		LastName:  user.LastName,
@@ -338,7 +340,6 @@ func (ctrl *controller) HandleCreateAPIKey(w *httputils.ResponseWriter, r *http.
 		ID:        apiKey.ID,
 		RawKey:    key,
 		UserUUID:  apiKey.UserUUID,
-		Prefix:    apiKey.Prefix,
 		Name:      apiKey.Name,
 		CreatedAt: apiKey.CreatedAt,
 		ExpiresAt: apiKey.ExpiresAt,
