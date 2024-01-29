@@ -126,6 +126,7 @@ This should returned the details of the created user:
 
 ```json
 {
+    "uuid": "92cf40a4-dfc8-4062-8872-4c390cf52d3b",
     "email": "michael.scott@dundermifflin.com",
     "first_name": "Michael",
     "last_name": "Scott",
@@ -217,9 +218,99 @@ This should return the current user's data:
 
 ```json
 {
+    "uuid": "92cf40a4-dfc8-4062-8872-4c390cf52d3b",
     "email": "michael.scott@dundermifflin.com",
     "first_name": "Michael",
     "last_name": "Scott",
     "created_at": "2024-01-27T02:09:27.918253Z"
 }
 ```
+
+### Create API Key
+
+Besides JWT authentication, Flagger API also supports API key authentication for a subset of endpoints. To create an API key, run:
+
+```bash
+curl \
+-X POST \
+-H "Authorization: Bearer <access-token>" \
+-d '{"name": "my api key", "expires_at": "2038-01-19T03:14:07Z"}'
+--url "localhost:8080/auth/api-keys"
+```
+
+This will create an API key and return the following:
+
+```json
+{
+    "id": 1,
+    "raw_key": "<api-key>",
+    "user_uuid": "92cf40a4-dfc8-4062-8872-4c390cf52d3b",
+    "name":"my api key",
+    "created_at":"2024-01-29T01:40:12.959305Z",
+    "expires_at":"2038-01-19T03:14:07Z",
+}
+```
+
+The raw API key returned can be used to fetch the current user:
+
+```bash
+curl \
+-X GET \
+-H "Authorization: X-API-Key <api-key>"
+--url "localhost:8080/api/auth/users/me"
+```
+
+Note that the raw API key string will only ever be included in the API key creation response ever, and never again. The raw key is not stored in the database, so a lost API key cannot be recovered.
+
+### List API Keys
+
+To list the current user's API keys, run:
+
+```bash
+curl \
+-X GET \
+-H "Authorization: Bearer <access-token>" \
+--url "localhost:8080/auth/api-keys"
+```
+
+This should return a list of API keys:
+
+```json
+{
+    "keys": [
+        {
+            "id": 1,
+            "user_uuid": "92cf40a4-dfc8-4062-8872-4c390cf52d3b",
+            "prefix": "<api-key-prefix>",
+            "name": "my api key",
+            "created_at": "2024-01-29T01:40:12.959305Z",
+            "expires_at":"2038-01-19T03:14:07Z"
+        }
+    ]
+}
+```
+
+### Delete API Key
+
+To delete an API key, run:
+
+```bash
+curl \
+-X DELETE \
+-H "Authorization: Bearer <access-token>" \
+--url "localhost:8080/auth/api-keys/<api-key-id>"
+```
+
+Make sure `<api-key-id>` is replaced with the appropriate API key ID.
+
+## Flags
+
+### Endpoints
+
+Route | Method | Authentication | Description
+--- | --- | --- | ---
+`/flags` | `POST` | JWT | Create flag
+`/flags` | `GET` | JWT | List flags
+`/flags/:id` | `GET` | JWT | Get flag by ID
+`/flags/:id` | `PUT` | JWT | Update flag
+`/flags/:name` | `GET` | API Key | Get flag by name
