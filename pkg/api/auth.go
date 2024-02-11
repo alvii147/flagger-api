@@ -37,13 +37,14 @@ type CreateUserRequest struct {
 	LastName  string `json:"last_name"`
 }
 
+// Validate validates fields in CreateUserRequest.
 func (r *CreateUserRequest) Validate() (bool, map[string][]string) {
 	v := validate.NewValidator()
 	v.ValidateStringEmail("email", r.Email)
-	v.ValidatorStringNotBlank("email", r.Email)
-	v.ValidatorStringNotBlank("password", r.Password)
-	v.ValidatorStringNotBlank("first_name", r.FirstName)
-	v.ValidatorStringNotBlank("last_name", r.LastName)
+	v.ValidateStringNotBlank("email", r.Email)
+	v.ValidateStringNotBlank("password", r.Password)
+	v.ValidateStringNotBlank("first_name", r.FirstName)
+	v.ValidateStringNotBlank("last_name", r.LastName)
 
 	return v.Passed(), v.Failures()
 }
@@ -62,9 +63,10 @@ type ActivateUserRequest struct {
 	Token string `json:"token"`
 }
 
+// Validate validates fields in ActivateUserRequest.
 func (r *ActivateUserRequest) Validate() (bool, map[string][]string) {
 	v := validate.NewValidator()
-	v.ValidatorStringNotBlank("token", r.Token)
+	v.ValidateStringNotBlank("token", r.Token)
 
 	return v.Passed(), v.Failures()
 }
@@ -84,11 +86,12 @@ type CreateTokenRequest struct {
 	Password string `json:"password"`
 }
 
+// Validate validates fields in CreateTokenRequest.
 func (r *CreateTokenRequest) Validate() (bool, map[string][]string) {
 	v := validate.NewValidator()
 	v.ValidateStringEmail("email", r.Email)
-	v.ValidatorStringNotBlank("email", r.Email)
-	v.ValidatorStringNotBlank("password", r.Password)
+	v.ValidateStringNotBlank("email", r.Email)
+	v.ValidateStringNotBlank("password", r.Password)
 
 	return v.Passed(), v.Failures()
 }
@@ -104,9 +107,10 @@ type RefreshTokenRequest struct {
 	Refresh string `json:"refresh"`
 }
 
+// Validate validates fields in RefreshTokenRequest.
 func (r *RefreshTokenRequest) Validate() (bool, map[string][]string) {
 	v := validate.NewValidator()
-	v.ValidatorStringNotBlank("refresh", r.Refresh)
+	v.ValidateStringNotBlank("refresh", r.Refresh)
 
 	return v.Passed(), v.Failures()
 }
@@ -122,9 +126,10 @@ type CreateAPIKeyRequest struct {
 	ExpiresAt pgtype.Timestamp `json:"expires_at"`
 }
 
+// Validate validates fields in CreateAPIKeyRequest.
 func (r *CreateAPIKeyRequest) Validate() (bool, map[string][]string) {
 	v := validate.NewValidator()
-	v.ValidatorStringNotBlank("name", r.Name)
+	v.ValidateStringNotBlank("name", r.Name)
 
 	return v.Passed(), v.Failures()
 }

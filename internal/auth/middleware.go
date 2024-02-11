@@ -25,7 +25,7 @@ func JWTAuthMiddleware(next httputils.HandlerFunc) httputils.HandlerFunc {
 					Code:   api.ErrCodeMissingCredentials,
 					Detail: api.ErrDetailMissingCredentials,
 				},
-				http.StatusForbidden,
+				http.StatusUnauthorized,
 			)
 			return
 		}
@@ -58,7 +58,7 @@ func APIKeyAuthMiddleware(next httputils.HandlerFunc, svc Service) httputils.Han
 					Code:   api.ErrCodeMissingCredentials,
 					Detail: api.ErrDetailMissingCredentials,
 				},
-				http.StatusForbidden,
+				http.StatusUnauthorized,
 			)
 			return
 		}

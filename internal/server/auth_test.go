@@ -115,6 +115,8 @@ func TestHandleCreateUser(t *testing.T) {
 		name           string
 		requestBody    string
 		wantStatusCode int
+		wantErrCode    string
+		wantErrDetail  string
 	}{
 		{
 			name: "Valid request",
@@ -127,6 +129,8 @@ func TestHandleCreateUser(t *testing.T) {
 				}
 			`, email, password, firstName, lastName),
 			wantStatusCode: http.StatusCreated,
+			wantErrCode:    "",
+			wantErrDetail:  "",
 		},
 		{
 			name: "Existing email",
@@ -139,6 +143,8 @@ func TestHandleCreateUser(t *testing.T) {
 				}
 			`, existingUser.Email, password, firstName, lastName),
 			wantStatusCode: http.StatusConflict,
+			wantErrCode:    api.ErrCodeResourceExists,
+			wantErrDetail:  api.ErrDetailUserExists,
 		},
 		{
 			name: "Invalid email",
@@ -151,6 +157,8 @@ func TestHandleCreateUser(t *testing.T) {
 				}
 			`, "1nv4l1d3m41l", password, firstName, lastName),
 			wantStatusCode: http.StatusBadRequest,
+			wantErrCode:    api.ErrCodeInvalidRequest,
+			wantErrDetail:  api.ErrDetailInvalidRequestData,
 		},
 		{
 			name: "Missing email",
@@ -162,6 +170,8 @@ func TestHandleCreateUser(t *testing.T) {
 				}
 			`, password, firstName, lastName),
 			wantStatusCode: http.StatusBadRequest,
+			wantErrCode:    api.ErrCodeInvalidRequest,
+			wantErrDetail:  api.ErrDetailInvalidRequestData,
 		},
 		{
 			name: "Empty email",
@@ -174,6 +184,8 @@ func TestHandleCreateUser(t *testing.T) {
 				}
 			`, "", password, firstName, lastName),
 			wantStatusCode: http.StatusBadRequest,
+			wantErrCode:    api.ErrCodeInvalidRequest,
+			wantErrDetail:  api.ErrDetailInvalidRequestData,
 		},
 		{
 			name: "Missing password",
@@ -185,6 +197,8 @@ func TestHandleCreateUser(t *testing.T) {
 				}
 			`, email, firstName, lastName),
 			wantStatusCode: http.StatusBadRequest,
+			wantErrCode:    api.ErrCodeInvalidRequest,
+			wantErrDetail:  api.ErrDetailInvalidRequestData,
 		},
 		{
 			name: "Empty password",
@@ -197,6 +211,8 @@ func TestHandleCreateUser(t *testing.T) {
 				}
 			`, email, "", firstName, lastName),
 			wantStatusCode: http.StatusBadRequest,
+			wantErrCode:    api.ErrCodeInvalidRequest,
+			wantErrDetail:  api.ErrDetailInvalidRequestData,
 		},
 		{
 			name: "Missing first name",
@@ -208,6 +224,8 @@ func TestHandleCreateUser(t *testing.T) {
 				}
 			`, email, password, lastName),
 			wantStatusCode: http.StatusBadRequest,
+			wantErrCode:    api.ErrCodeInvalidRequest,
+			wantErrDetail:  api.ErrDetailInvalidRequestData,
 		},
 		{
 			name: "Empty first name",
@@ -220,6 +238,8 @@ func TestHandleCreateUser(t *testing.T) {
 				}
 			`, email, password, "", lastName),
 			wantStatusCode: http.StatusBadRequest,
+			wantErrCode:    api.ErrCodeInvalidRequest,
+			wantErrDetail:  api.ErrDetailInvalidRequestData,
 		},
 		{
 			name: "Missing last name",
@@ -231,6 +251,8 @@ func TestHandleCreateUser(t *testing.T) {
 				}
 			`, email, password, firstName),
 			wantStatusCode: http.StatusBadRequest,
+			wantErrCode:    api.ErrCodeInvalidRequest,
+			wantErrDetail:  api.ErrDetailInvalidRequestData,
 		},
 		{
 			name: "Empty last name",
@@ -243,6 +265,8 @@ func TestHandleCreateUser(t *testing.T) {
 				}
 			`, email, password, firstName, ""),
 			wantStatusCode: http.StatusBadRequest,
+			wantErrCode:    api.ErrCodeInvalidRequest,
+			wantErrDetail:  api.ErrDetailInvalidRequestData,
 		},
 	}
 
@@ -292,11 +316,279 @@ func TestHandleCreateUser(t *testing.T) {
 				require.Len(t, mailLogs, mailCount)
 
 				defer res.Body.Close()
-				var errrResp api.ErrorResponse
-				err = json.NewDecoder(res.Body).Decode(&errrResp)
+				var errResp api.ErrorResponse
+				err = json.NewDecoder(res.Body).Decode(&errResp)
 				require.NoError(t, err)
 
-				t.Logf("%+v\n", errrResp)
+				require.Equal(t, testcase.wantErrCode, errResp.Code)
+				require.Equal(t, testcase.wantErrDetail, errResp.Detail)
+			}
+		})
+	}
+}
+
+func TestHandleActivateUser(t *testing.T) {
+	t.Parallel()
+
+	config := env.GetConfig()
+
+	ctrl, err := server.NewController()
+	require.NoError(t, err)
+
+	router := ctrl.Route()
+	srv := httptest.NewServer(router)
+
+	t.Cleanup(func() {
+		err = ctrl.Close()
+		require.NoError(t, err)
+	})
+
+	httpClient := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = true
+	})
+
+	now := time.Now().UTC()
+	activeUserToken, err := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		&api.ActivationJWTClaims{
+			Subject:   activeUser.UUID,
+			TokenType: string(auth.JWTTypeActivation),
+			IssuedAt:  utils.JSONTimeStamp(now),
+			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.ActivationLifetime))),
+			JWTID:     uuid.NewString(),
+		},
+	).SignedString([]byte(config.SecretKey))
+	require.NoError(t, err)
+
+	inactiveUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = false
+	})
+
+	inactiveUserToken, err := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		&api.ActivationJWTClaims{
+			Subject:   inactiveUser.UUID,
+			TokenType: string(auth.JWTTypeActivation),
+			IssuedAt:  utils.JSONTimeStamp(now),
+			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.ActivationLifetime))),
+			JWTID:     uuid.NewString(),
+		},
+	).SignedString([]byte(config.SecretKey))
+	require.NoError(t, err)
+
+	testcases := []struct {
+		name           string
+		requestBody    string
+		wantStatusCode int
+		wantErrCode    string
+		wantErrDetail  string
+	}{
+		{
+			name: "Inactive user",
+			requestBody: fmt.Sprintf(`
+				{
+					"token": "%s"
+				}
+			`, inactiveUserToken),
+			wantStatusCode: http.StatusOK,
+			wantErrCode:    "",
+			wantErrDetail:  "",
+		},
+		{
+			name: "Already active user",
+			requestBody: fmt.Sprintf(`
+				{
+					"token": "%s"
+				}
+			`, activeUserToken),
+			wantStatusCode: http.StatusNotFound,
+			wantErrCode:    api.ErrCodeResourceNotFound,
+			wantErrDetail:  api.ErrDetailUserNotFound,
+		},
+		{
+			name: "Invalid token",
+			requestBody: `
+				{
+					"token": "1nV4LiDT0k3n"
+				}
+			`,
+			wantStatusCode: http.StatusBadRequest,
+			wantErrCode:    api.ErrCodeInvalidRequest,
+			wantErrDetail:  api.ErrDetailInvalidToken,
+		},
+		{
+			name: "Missing token",
+			requestBody: `
+				{}
+			`,
+			wantStatusCode: http.StatusBadRequest,
+			wantErrCode:    api.ErrCodeInvalidRequest,
+			wantErrDetail:  api.ErrDetailInvalidRequestData,
+		},
+	}
+
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			req, err := http.NewRequest(
+				http.MethodPost,
+				srv.URL+"/auth/users/activate",
+				bytes.NewReader([]byte(testcase.requestBody)),
+			)
+			require.NoError(t, err)
+
+			res, err := httpClient.Do(req)
+			require.NoError(t, err)
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+
+			if !httputils.IsHTTPSuccess(testcase.wantStatusCode) {
+				defer res.Body.Close()
+				var errResp api.ErrorResponse
+				err = json.NewDecoder(res.Body).Decode(&errResp)
+				require.NoError(t, err)
+
+				require.Equal(t, testcase.wantErrCode, errResp.Code)
+				require.Equal(t, testcase.wantErrDetail, errResp.Detail)
+			}
+		})
+	}
+}
+
+func TestHandleGetUserMe(t *testing.T) {
+	t.Parallel()
+
+	ctrl, err := server.NewController()
+	require.NoError(t, err)
+
+	router := ctrl.Route()
+	srv := httptest.NewServer(router)
+
+	t.Cleanup(func() {
+		err = ctrl.Close()
+		require.NoError(t, err)
+	})
+
+	httpClient := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = true
+	})
+	activeUserAccessJWT, _ := testkitinternal.MustCreateUserAuthAccessJWTs(activeUser.UUID)
+	_, activeUserAPIKey := testkitinternal.MustCreateUserAPIKey(t, activeUser.UUID, nil)
+
+	inactiveUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = false
+	})
+	inactiveUserAccessJWT, _ := testkitinternal.MustCreateUserAuthAccessJWTs(inactiveUser.UUID)
+	_, inactiveUserAPIKey := testkitinternal.MustCreateUserAPIKey(t, inactiveUser.UUID, nil)
+
+	testcases := []struct {
+		name           string
+		path           string
+		headers        map[string]string
+		user           *auth.User
+		wantStatusCode int
+		wantErrCode    string
+		wantErrDetail  string
+	}{
+		{
+			name: "Get active user using JWT",
+			path: "/auth/users/me",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", activeUserAccessJWT),
+			},
+			user:           activeUser,
+			wantStatusCode: http.StatusOK,
+			wantErrCode:    "",
+			wantErrDetail:  "",
+		},
+		{
+			name: "Get active user using API key",
+			path: "/api/auth/users/me",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("X-API-Key %s", activeUserAPIKey),
+			},
+			user:           activeUser,
+			wantStatusCode: http.StatusOK,
+			wantErrCode:    "",
+			wantErrDetail:  "",
+		},
+		{
+			name: "Get inactive user using JWT",
+			path: "/auth/users/me",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", inactiveUserAccessJWT),
+			},
+			user:           inactiveUser,
+			wantStatusCode: http.StatusNotFound,
+			wantErrCode:    api.ErrCodeResourceNotFound,
+			wantErrDetail:  api.ErrDetailUserNotFound,
+		},
+		{
+			name: "Get inactive user using API key",
+			path: "/api/auth/users/me",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("X-API-Key %s", inactiveUserAPIKey),
+			},
+			user:           inactiveUser,
+			wantStatusCode: http.StatusUnauthorized,
+			wantErrCode:    api.ErrCodeInvalidCredentials,
+			wantErrDetail:  api.ErrDetailInvalidToken,
+		},
+		{
+			name:           "Get user without authentication",
+			path:           "/auth/users/me",
+			headers:        map[string]string{},
+			user:           nil,
+			wantStatusCode: http.StatusUnauthorized,
+			wantErrCode:    api.ErrCodeMissingCredentials,
+			wantErrDetail:  api.ErrDetailMissingCredentials,
+		},
+	}
+
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			req, err := http.NewRequest(http.MethodGet, srv.URL+testcase.path, http.NoBody)
+			require.NoError(t, err)
+
+			for key, value := range testcase.headers {
+				req.Header.Add(key, value)
+			}
+
+			res, err := httpClient.Do(req)
+			require.NoError(t, err)
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+
+			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
+				defer res.Body.Close()
+				var getUserMeResp api.GetUserMeResponse
+				err = json.NewDecoder(res.Body).Decode(&getUserMeResp)
+				require.NoError(t, err)
+
+				require.Equal(t, testcase.user.UUID, getUserMeResp.UUID)
+				require.Equal(t, testcase.user.Email, getUserMeResp.Email)
+				require.Equal(t, testcase.user.FirstName, getUserMeResp.FirstName)
+				require.Equal(t, testcase.user.LastName, getUserMeResp.LastName)
+				testkit.RequireTimeAlmostEqual(t, testcase.user.CreatedAt, getUserMeResp.CreatedAt)
+			} else {
+				defer res.Body.Close()
+				var errResp api.ErrorResponse
+				err = json.NewDecoder(res.Body).Decode(&errResp)
+				require.NoError(t, err)
+
+				require.Equal(t, testcase.wantErrCode, errResp.Code)
+				require.Equal(t, testcase.wantErrDetail, errResp.Detail)
 			}
 		})
 	}

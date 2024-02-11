@@ -4,10 +4,14 @@ import (
 	"context"
 	"fmt"
 	"testing"
+	"time"
 
 	"github.com/alvii147/flagger-api/internal/auth"
 	"github.com/alvii147/flagger-api/internal/env"
+	"github.com/alvii147/flagger-api/pkg/api"
 	"github.com/alvii147/flagger-api/pkg/testkit"
+	"github.com/alvii147/flagger-api/pkg/utils"
+	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"golang.org/x/crypto/bcrypt"
@@ -55,6 +59,42 @@ func MustCreateUser(t *testing.T, modifier func(u *auth.User)) (*auth.User, stri
 	}
 
 	return user, password
+}
+
+// MustCreateUserAuthJWTs
+func MustCreateUserAuthAccessJWTs(userUUID string) (string, string) {
+	config := env.GetConfig()
+
+	now := time.Now().UTC()
+	accessToken, err := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		&api.AuthJWTClaims{
+			Subject:   userUUID,
+			TokenType: string(auth.JWTTypeAccess),
+			IssuedAt:  utils.JSONTimeStamp(now),
+			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.AuthAccessLifetime))),
+			JWTID:     uuid.NewString(),
+		},
+	).SignedString([]byte(config.SecretKey))
+	if err != nil {
+		panic(fmt.Sprintf("MustCreateUserAPIKey failed to jwt.SignedString: %v", err))
+	}
+
+	refreshToken, err := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		&api.AuthJWTClaims{
+			Subject:   userUUID,
+			TokenType: string(auth.JWTTypeRefresh),
+			IssuedAt:  utils.JSONTimeStamp(now),
+			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.AuthRefreshLifetime))),
+			JWTID:     uuid.NewString(),
+		},
+	).SignedString([]byte(config.SecretKey))
+	if err != nil {
+		panic(fmt.Sprintf("MustCreateUserAPIKey failed to jwt.SignedString: %v", err))
+	}
+
+	return accessToken, refreshToken
 }
 
 // MustCreateUserAPIKey creates and returns a new API key for User and panics on error.

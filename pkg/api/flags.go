@@ -12,9 +12,10 @@ type CreateFlagRequest struct {
 	Name string `json:"name"`
 }
 
+// Validate validates fields in CreateFlagRequest.
 func (r *CreateFlagRequest) Validate() (bool, map[string][]string) {
 	v := validate.NewValidator()
-	v.ValidatorStringNotBlank("name", r.Name)
+	v.ValidateStringNotBlank("name", r.Name)
 
 	return v.Passed(), v.Failures()
 }
@@ -81,9 +82,10 @@ type UpdateFlagRequest struct {
 	IsEnabled bool   `json:"is_enabled"`
 }
 
+// Validate validates fields in UpdateFlagRequest.
 func (r *UpdateFlagRequest) Validate() (bool, map[string][]string) {
 	v := validate.NewValidator()
-	v.ValidatorStringNotBlank("name", r.Name)
+	v.ValidateStringNotBlank("name", r.Name)
 	v.ValidateStringSlug("name", r.Name)
 
 	return v.Passed(), v.Failures()

@@ -4,34 +4,221 @@ import (
 	"testing"
 
 	"github.com/alvii147/flagger-api/pkg/validate"
+	"github.com/stretchr/testify/require"
 )
 
-type Req struct {
-	Email     string `validate:"email"`
-	Password  string `validate:"minlength:8"`
-	FirstName string `validate:"minlength:1,maxlength:50"`
-	LastName  string `validate:"minlength:1,maxlength:50"`
+func TestValidateStringNotBlank(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		name       string
+		value      string
+		wantPassed bool
+	}{
+		{
+			name:       "Non-blank string",
+			value:      "d34d B33F",
+			wantPassed: true,
+		},
+		{
+			name:       "Empty string",
+			value:      "",
+			wantPassed: false,
+		},
+		{
+			name:       "Blank string",
+			value:      "   ",
+			wantPassed: false,
+		},
+	}
+
+	field := "value"
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			v := validate.NewValidator()
+			v.ValidateStringNotBlank(field, testcase.value)
+			require.Equal(t, testcase.wantPassed, v.Passed())
+
+			failures := v.Failures()
+			if testcase.wantPassed {
+				require.Empty(t, failures)
+			} else {
+				require.NotEmpty(t, failures[field])
+			}
+		})
+	}
 }
 
-func TestValidate(t *testing.T) {
-	req := &Req{}
-	v := validate.NewValidator()
-	v.ValidateStringEmail("email", req.Email)
-	v.ValidateStringMinLength("first_name", req.FirstName, 1)
-	for _, e := range v.Failures() {
-		t.Log(e)
+func TestValidateStringMaxLength(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		name       string
+		value      string
+		maxLen     int
+		wantPassed bool
+	}{
+		{
+			name:       "String with allowed length",
+			value:      "d34d B33F",
+			maxLen:     10,
+			wantPassed: true,
+		},
+		{
+			name:       "Empty string",
+			value:      "t00L0ng",
+			maxLen:     5,
+			wantPassed: false,
+		},
 	}
 
-	req = &Req{
-		Email:     "name@example.com",
-		FirstName: "FirstName",
-		LastName:  "LastName",
-		Password:  "93n9emDSFDS39",
+	field := "value"
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			v := validate.NewValidator()
+			v.ValidateStringMaxLength(field, testcase.value, testcase.maxLen)
+			require.Equal(t, testcase.wantPassed, v.Passed())
+
+			failures := v.Failures()
+			if testcase.wantPassed {
+				require.Empty(t, failures)
+			} else {
+				require.NotEmpty(t, failures[field])
+			}
+		})
 	}
-	v = validate.NewValidator()
-	v.ValidateStringEmail("email", req.Email)
-	v.ValidateStringMinLength("first_name", req.FirstName, 1)
-	for _, e := range v.Failures() {
-		t.Log(e)
+}
+
+func TestValidateStringMinLength(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		name       string
+		value      string
+		minLen     int
+		wantPassed bool
+	}{
+		{
+			name:       "String with allowed length",
+			value:      "d34d B33F",
+			minLen:     5,
+			wantPassed: true,
+		},
+		{
+			name:       "Empty string",
+			value:      "t00sH0rt",
+			minLen:     10,
+			wantPassed: false,
+		},
+	}
+
+	field := "value"
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			v := validate.NewValidator()
+			v.ValidateStringMinLength(field, testcase.value, testcase.minLen)
+			require.Equal(t, testcase.wantPassed, v.Passed())
+
+			failures := v.Failures()
+			if testcase.wantPassed {
+				require.Empty(t, failures)
+			} else {
+				require.NotEmpty(t, failures[field])
+			}
+		})
+	}
+}
+
+func TestValidateStringEmail(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		name       string
+		value      string
+		wantPassed bool
+	}{
+		{
+			name:       "Valid email",
+			value:      "name@example.com",
+			wantPassed: true,
+		},
+		{
+			name:       "Invalid email",
+			value:      "1nv4l1d3m41l",
+			wantPassed: false,
+		},
+	}
+
+	field := "value"
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			v := validate.NewValidator()
+			v.ValidateStringEmail(field, testcase.value)
+			require.Equal(t, testcase.wantPassed, v.Passed())
+
+			failures := v.Failures()
+			if testcase.wantPassed {
+				require.Empty(t, failures)
+			} else {
+				require.NotEmpty(t, failures[field])
+			}
+		})
+	}
+}
+
+func TestValidateStringSlug(t *testing.T) {
+	t.Parallel()
+
+	testcases := []struct {
+		name       string
+		value      string
+		wantPassed bool
+	}{
+		{
+			name:       "Valid slug",
+			value:      "d34d-b33f",
+			wantPassed: true,
+		},
+		{
+			name:       "String with invalid characters",
+			value:      "hello w*rld",
+			wantPassed: false,
+		},
+		{
+			name:       "String with beginning with hyphen",
+			value:      "-d34d-b33f",
+			wantPassed: false,
+		},
+	}
+
+	field := "value"
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			v := validate.NewValidator()
+			v.ValidateStringSlug(field, testcase.value)
+			require.Equal(t, testcase.wantPassed, v.Passed())
+
+			failures := v.Failures()
+			if testcase.wantPassed {
+				require.Empty(t, failures)
+			} else {
+				require.NotEmpty(t, failures[field])
+			}
+		})
 	}
 }
