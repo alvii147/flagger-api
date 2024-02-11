@@ -6,6 +6,7 @@ import (
 	"net/mail"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 )
 
 func MustParseMailMessage(msg string) (string, string) {
@@ -32,7 +33,7 @@ func MustParseMailMessage(msg string) (string, string) {
 
 	nonEmptyMailSections := []string{}
 	for _, sec := range mailSections {
-		if len(strings.TrimSpace(sec)) != 0 {
+		if utf8.RuneCountInString(strings.TrimSpace(sec)) != 0 {
 			nonEmptyMailSections = append(nonEmptyMailSections, sec)
 		}
 	}

@@ -63,6 +63,20 @@ func (ctrl *controller) HandleCreateFlag(w *httputils.ResponseWriter, r *http.Re
 		return
 	}
 
+	validationPassed, validationFailures := req.Validate()
+	if !validationPassed {
+		logger.LogWarn("HandleCreateFlag failed to Validate:", validationFailures)
+		w.WriteJSON(
+			api.ErrorResponse{
+				Code:               api.ErrCodeInvalidRequest,
+				Detail:             api.ErrDetailInvalidRequestData,
+				ValidationFailures: validationFailures,
+			},
+			http.StatusBadRequest,
+		)
+		return
+	}
+
 	flag, err := ctrl.flagsService.CreateFlag(r.Context(), string(req.Name))
 	if err != nil {
 		logger.LogWarn("HandleCreateFlag failed to ctrl.flagsService.CreateFlag:", err)
@@ -274,6 +288,20 @@ func (ctrl *controller) HandleUpdateFlag(w *httputils.ResponseWriter, r *http.Re
 			api.ErrorResponse{
 				Code:   api.ErrCodeInvalidRequest,
 				Detail: api.ErrDetailInvalidRequestData,
+			},
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	validationPassed, validationFailures := req.Validate()
+	if !validationPassed {
+		logger.LogWarn("HandleUpdateFlag failed to Validate:", validationFailures)
+		w.WriteJSON(
+			api.ErrorResponse{
+				Code:               api.ErrCodeInvalidRequest,
+				Detail:             api.ErrDetailInvalidRequestData,
+				ValidationFailures: validationFailures,
 			},
 			http.StatusBadRequest,
 		)

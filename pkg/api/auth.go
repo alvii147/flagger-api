@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/alvii147/flagger-api/pkg/utils"
+	"github.com/alvii147/flagger-api/pkg/validate"
 	"github.com/golang-jwt/jwt"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -30,10 +31,21 @@ type ActivationJWTClaims struct {
 
 // CreateUserRequest represents the request body for create User requests.
 type CreateUserRequest struct {
-	Email     utils.JSONEmail          `json:"email"`
-	Password  utils.JSONNonEmptyString `json:"password"`
-	FirstName utils.JSONNonEmptyString `json:"first_name"`
-	LastName  utils.JSONNonEmptyString `json:"last_name"`
+	Email     string `json:"email"`
+	Password  string `json:"password"`
+	FirstName string `json:"first_name"`
+	LastName  string `json:"last_name"`
+}
+
+func (r *CreateUserRequest) Validate() (bool, map[string][]string) {
+	v := validate.NewValidator()
+	v.ValidateStringEmail("email", r.Email)
+	v.ValidatorStringNotBlank("email", r.Email)
+	v.ValidatorStringNotBlank("password", r.Password)
+	v.ValidatorStringNotBlank("first_name", r.FirstName)
+	v.ValidatorStringNotBlank("last_name", r.LastName)
+
+	return v.Passed(), v.Failures()
 }
 
 // CreateUserResponse represents the response body for create User requests.
@@ -47,7 +59,14 @@ type CreateUserResponse struct {
 
 // ActivateUserRequest represents the request body for activate User requests.
 type ActivateUserRequest struct {
-	Token utils.JSONNonEmptyString `json:"token"`
+	Token string `json:"token"`
+}
+
+func (r *ActivateUserRequest) Validate() (bool, map[string][]string) {
+	v := validate.NewValidator()
+	v.ValidatorStringNotBlank("token", r.Token)
+
+	return v.Passed(), v.Failures()
 }
 
 // GetUserMeResponse represents the request body for get current User requests.
@@ -61,8 +80,17 @@ type GetUserMeResponse struct {
 
 // CreateTokenRequest represents the request body for create token requests.
 type CreateTokenRequest struct {
-	Email    utils.JSONNonEmptyString `json:"email"`
-	Password utils.JSONNonEmptyString `json:"password"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (r *CreateTokenRequest) Validate() (bool, map[string][]string) {
+	v := validate.NewValidator()
+	v.ValidateStringEmail("email", r.Email)
+	v.ValidatorStringNotBlank("email", r.Email)
+	v.ValidatorStringNotBlank("password", r.Password)
+
+	return v.Passed(), v.Failures()
 }
 
 // CreateTokenResponse represents the response body for create token requests.
@@ -73,7 +101,14 @@ type CreateTokenResponse struct {
 
 // RefreshTokenRequest represents the request body for refresh token requests.
 type RefreshTokenRequest struct {
-	Refresh utils.JSONNonEmptyString `json:"refresh"`
+	Refresh string `json:"refresh"`
+}
+
+func (r *RefreshTokenRequest) Validate() (bool, map[string][]string) {
+	v := validate.NewValidator()
+	v.ValidatorStringNotBlank("refresh", r.Refresh)
+
+	return v.Passed(), v.Failures()
 }
 
 // RefreshTokenResponse represents the response body for refresh token requests.
@@ -83,8 +118,15 @@ type RefreshTokenResponse struct {
 
 // CreateAPIKeyRequest represents the request body for API Key creation requests.
 type CreateAPIKeyRequest struct {
-	Name      utils.JSONNonEmptyString `json:"name"`
-	ExpiresAt pgtype.Timestamp         `json:"expires_at"`
+	Name      string           `json:"name"`
+	ExpiresAt pgtype.Timestamp `json:"expires_at"`
+}
+
+func (r *CreateAPIKeyRequest) Validate() (bool, map[string][]string) {
+	v := validate.NewValidator()
+	v.ValidatorStringNotBlank("name", r.Name)
+
+	return v.Passed(), v.Failures()
 }
 
 // CreateAPIKeyResponse represents the response body for API Key creation requests.

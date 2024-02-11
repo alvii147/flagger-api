@@ -51,6 +51,20 @@ func (ctrl *controller) HandleCreateUser(w *httputils.ResponseWriter, r *http.Re
 		return
 	}
 
+	validationPassed, validationFailures := req.Validate()
+	if !validationPassed {
+		logger.LogWarn("HandleCreateUser failed to Validate:", validationFailures)
+		w.WriteJSON(
+			api.ErrorResponse{
+				Code:               api.ErrCodeInvalidRequest,
+				Detail:             api.ErrDetailInvalidRequestData,
+				ValidationFailures: validationFailures,
+			},
+			http.StatusBadRequest,
+		)
+		return
+	}
+
 	var wg sync.WaitGroup
 	user, err := ctrl.authService.CreateUser(
 		r.Context(),
@@ -108,6 +122,20 @@ func (ctrl *controller) HandleActivateUser(w *httputils.ResponseWriter, r *http.
 			api.ErrorResponse{
 				Code:   api.ErrCodeInvalidRequest,
 				Detail: api.ErrDetailInvalidRequestData,
+			},
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	validationPassed, validationFailures := req.Validate()
+	if !validationPassed {
+		logger.LogWarn("HandleActivateUser failed to Validate:", validationFailures)
+		w.WriteJSON(
+			api.ErrorResponse{
+				Code:               api.ErrCodeInvalidRequest,
+				Detail:             api.ErrDetailInvalidRequestData,
+				ValidationFailures: validationFailures,
 			},
 			http.StatusBadRequest,
 		)
@@ -213,6 +241,20 @@ func (ctrl *controller) HandleCreateJWT(w *httputils.ResponseWriter, r *http.Req
 		return
 	}
 
+	validationPassed, validationFailures := req.Validate()
+	if !validationPassed {
+		logger.LogWarn("HandleCreateJWT failed to Validate:", validationFailures)
+		w.WriteJSON(
+			api.ErrorResponse{
+				Code:               api.ErrCodeInvalidRequest,
+				Detail:             api.ErrDetailInvalidRequestData,
+				ValidationFailures: validationFailures,
+			},
+			http.StatusBadRequest,
+		)
+		return
+	}
+
 	accessToken, refreshToken, err := ctrl.authService.CreateJWT(
 		r.Context(),
 		string(req.Email),
@@ -269,6 +311,20 @@ func (ctrl *controller) HandleRefreshJWT(w *httputils.ResponseWriter, r *http.Re
 		return
 	}
 
+	validationPassed, validationFailures := req.Validate()
+	if !validationPassed {
+		logger.LogWarn("HandleRefreshJWT failed to Validate:", validationFailures)
+		w.WriteJSON(
+			api.ErrorResponse{
+				Code:               api.ErrCodeInvalidRequest,
+				Detail:             api.ErrDetailInvalidRequestData,
+				ValidationFailures: validationFailures,
+			},
+			http.StatusBadRequest,
+		)
+		return
+	}
+
 	accessToken, err := ctrl.authService.RefreshJWT(
 		r.Context(),
 		string(req.Refresh),
@@ -317,6 +373,20 @@ func (ctrl *controller) HandleCreateAPIKey(w *httputils.ResponseWriter, r *http.
 			api.ErrorResponse{
 				Code:   api.ErrCodeInvalidRequest,
 				Detail: api.ErrDetailInvalidRequestData,
+			},
+			http.StatusBadRequest,
+		)
+		return
+	}
+
+	validationPassed, validationFailures := req.Validate()
+	if !validationPassed {
+		logger.LogWarn("HandleCreateAPIKey failed to Validate:", validationFailures)
+		w.WriteJSON(
+			api.ErrorResponse{
+				Code:               api.ErrCodeInvalidRequest,
+				Detail:             api.ErrDetailInvalidRequestData,
+				ValidationFailures: validationFailures,
 			},
 			http.StatusBadRequest,
 		)

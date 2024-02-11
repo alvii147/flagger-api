@@ -18,6 +18,7 @@ import (
 	"github.com/alvii147/flagger-api/internal/server"
 	"github.com/alvii147/flagger-api/internal/testkitinternal"
 	"github.com/alvii147/flagger-api/pkg/api"
+	"github.com/alvii147/flagger-api/pkg/httputils"
 	"github.com/alvii147/flagger-api/pkg/mailclient"
 	"github.com/alvii147/flagger-api/pkg/testkit"
 	"github.com/alvii147/flagger-api/pkg/utils"
@@ -80,6 +81,222 @@ func TestGetAPIKeyIDParam(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, testcase.wantAPIKeyID, apiKeyID)
+			}
+		})
+	}
+}
+
+func TestHandleCreateUser(t *testing.T) {
+	ctrl, err := server.NewController()
+	require.NoError(t, err)
+
+	router := ctrl.Route()
+	srv := httptest.NewServer(router)
+
+	t.Cleanup(func() {
+		err = ctrl.Close()
+		require.NoError(t, err)
+	})
+
+	httpClient := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	existingUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = true
+	})
+
+	email := testkit.GenerateFakeEmail()
+	password := testkit.GenerateFakePassword()
+	firstName := testkit.MustGenerateRandomString(8, true, true, false)
+	lastName := testkit.MustGenerateRandomString(8, true, true, false)
+
+	testcases := []struct {
+		name           string
+		requestBody    string
+		wantStatusCode int
+	}{
+		{
+			name: "Valid request",
+			requestBody: fmt.Sprintf(`
+				{
+					"email": "%s",
+					"password": "%s",
+					"first_name": "%s",
+					"last_name": "%s"
+				}
+			`, email, password, firstName, lastName),
+			wantStatusCode: http.StatusCreated,
+		},
+		{
+			name: "Existing email",
+			requestBody: fmt.Sprintf(`
+				{
+					"email": "%s",
+					"password": "%s",
+					"first_name": "%s",
+					"last_name": "%s"
+				}
+			`, existingUser.Email, password, firstName, lastName),
+			wantStatusCode: http.StatusConflict,
+		},
+		{
+			name: "Invalid email",
+			requestBody: fmt.Sprintf(`
+				{
+					"email": "%s",
+					"password": "%s",
+					"first_name": "%s",
+					"last_name": "%s"
+				}
+			`, "1nv4l1d3m41l", password, firstName, lastName),
+			wantStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "Missing email",
+			requestBody: fmt.Sprintf(`
+				{
+					"password": "%s",
+					"first_name": "%s",
+					"last_name": "%s"
+				}
+			`, password, firstName, lastName),
+			wantStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "Empty email",
+			requestBody: fmt.Sprintf(`
+				{
+					"email": "%s",
+					"password": "%s",
+					"first_name": "%s",
+					"last_name": "%s"
+				}
+			`, "", password, firstName, lastName),
+			wantStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "Missing password",
+			requestBody: fmt.Sprintf(`
+				{
+					"email": "%s",
+					"first_name": "%s",
+					"last_name": "%s"
+				}
+			`, email, firstName, lastName),
+			wantStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "Empty password",
+			requestBody: fmt.Sprintf(`
+				{
+					"email": "%s",
+					"password": "%s",
+					"first_name": "%s",
+					"last_name": "%s"
+				}
+			`, email, "", firstName, lastName),
+			wantStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "Missing first name",
+			requestBody: fmt.Sprintf(`
+				{
+					"email": "%s",
+					"password": "%s",
+					"last_name": "%s"
+				}
+			`, email, password, lastName),
+			wantStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "Empty first name",
+			requestBody: fmt.Sprintf(`
+				{
+					"email": "%s",
+					"password": "%s",
+					"first_name": "%s",
+					"last_name": "%s"
+				}
+			`, email, password, "", lastName),
+			wantStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "Missing last name",
+			requestBody: fmt.Sprintf(`
+				{
+					"email": "%s",
+					"password": "%s",
+					"first_name": "%s",
+				}
+			`, email, password, firstName),
+			wantStatusCode: http.StatusBadRequest,
+		},
+		{
+			name: "Empty last name",
+			requestBody: fmt.Sprintf(`
+				{
+					"email": "%s",
+					"password": "%s",
+					"first_name": "%s",
+					"last_name": "%s"
+				}
+			`, email, password, firstName, ""),
+			wantStatusCode: http.StatusBadRequest,
+		},
+	}
+
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			mailCount := len(mailclient.GetInMemMailLogs())
+
+			req, err := http.NewRequest(
+				http.MethodPost,
+				srv.URL+"/auth/users",
+				bytes.NewReader([]byte(testcase.requestBody)),
+			)
+			require.NoError(t, err)
+
+			userCreatedAt := time.Now().UTC()
+			res, err := httpClient.Do(req)
+			require.NoError(t, err)
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+
+			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
+				defer res.Body.Close()
+				var createUserResp api.CreateUserResponse
+				err = json.NewDecoder(res.Body).Decode(&createUserResp)
+				require.NoError(t, err)
+
+				require.Equal(t, email, createUserResp.Email)
+				require.Equal(t, firstName, createUserResp.FirstName)
+				require.Equal(t, lastName, createUserResp.LastName)
+				testkit.RequireTimeAlmostEqual(t, userCreatedAt, createUserResp.CreatedAt)
+
+				time.Sleep(5 * time.Second)
+
+				mailLogs := mailclient.GetInMemMailLogs()
+				require.Len(t, mailLogs, mailCount+1)
+
+				lastMail := mailLogs[len(mailLogs)-1]
+				require.Equal(t, []string{createUserResp.Email}, lastMail.To)
+				require.Equal(t, "Welcome to Flagger!", lastMail.Subject)
+				testkit.RequireTimeAlmostEqual(t, userCreatedAt, lastMail.SentAt)
+
+				mailMessage := string(lastMail.Message)
+				require.Contains(t, mailMessage, "Welcome to Flagger!")
+				require.Contains(t, mailMessage, "Flagger - Activate Your Account")
+			} else {
+				mailLogs := mailclient.GetInMemMailLogs()
+				require.Len(t, mailLogs, mailCount)
+
+				defer res.Body.Close()
+				var errrResp api.ErrorResponse
+				err = json.NewDecoder(res.Body).Decode(&errrResp)
+				require.NoError(t, err)
+
+				t.Logf("%+v\n", errrResp)
 			}
 		})
 	}

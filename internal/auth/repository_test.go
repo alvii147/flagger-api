@@ -153,6 +153,7 @@ func TestRepositoryGetUserByEmailSuccess(t *testing.T) {
 	fetchedUser, err := repo.GetUserByEmail(dbConn, user.Email)
 	require.NoError(t, err)
 
+	require.Equal(t, user.UUID, fetchedUser.UUID)
 	require.Equal(t, user.Email, fetchedUser.Email)
 	require.Equal(t, user.Password, fetchedUser.Password)
 	require.Equal(t, user.FirstName, fetchedUser.FirstName)
@@ -213,6 +214,7 @@ func TestRepositoryGetUserByUUIDSuccess(t *testing.T) {
 	fetchedUser, err := repo.GetUserByUUID(dbConn, user.UUID)
 	require.NoError(t, err)
 
+	require.Equal(t, user.UUID, fetchedUser.UUID)
 	require.Equal(t, user.Email, fetchedUser.Email)
 	require.Equal(t, user.Password, fetchedUser.Password)
 	require.Equal(t, user.FirstName, fetchedUser.FirstName)
@@ -253,6 +255,129 @@ func TestRepositoryGetUserByUUIDError(t *testing.T) {
 			dbConn := testkitinternal.RequireCreateDatabaseConn(t, dbPool, context.Background())
 			_, err := repo.GetUserByUUID(dbConn, testcase.userUUID)
 			require.ErrorIs(t, err, errutils.ErrDatabaseNoRowsReturned)
+		})
+	}
+}
+
+func TestRepositoryUpdateUserSuccess(t *testing.T) {
+	t.Parallel()
+
+	startingFirstName := "Firstname"
+	startingLastName := "Lastname"
+	updatedFirstName := "Updatedfirstname"
+	updatedLastName := "Updatedlastname"
+
+	testcases := []struct {
+		name          string
+		firstName     *string
+		lastName      *string
+		wantFirstName string
+		wantLastName  string
+	}{
+		{
+			name:          "Update both first and last names",
+			firstName:     &updatedFirstName,
+			lastName:      &updatedLastName,
+			wantFirstName: updatedFirstName,
+			wantLastName:  updatedLastName,
+		},
+		{
+			name:          "Update first name",
+			firstName:     &updatedFirstName,
+			lastName:      nil,
+			wantFirstName: updatedFirstName,
+			wantLastName:  startingLastName,
+		},
+		{
+			name:          "Update last name",
+			firstName:     nil,
+			lastName:      &updatedLastName,
+			wantFirstName: startingFirstName,
+			wantLastName:  updatedLastName,
+		},
+	}
+
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+				u.FirstName = startingFirstName
+				u.LastName = startingLastName
+				u.IsActive = true
+			})
+
+			dbPool := testkitinternal.RequireCreateDatabasePool(t)
+			dbConn := testkitinternal.RequireCreateDatabaseConn(t, dbPool, context.Background())
+			repo := auth.NewRepository()
+
+			updatedUser, err := repo.UpdateUser(dbConn, user.UUID, testcase.firstName, testcase.lastName)
+			require.NoError(t, err)
+
+			require.Equal(t, user.UUID, updatedUser.UUID)
+			require.Equal(t, user.Email, updatedUser.Email)
+			require.Equal(t, user.Password, updatedUser.Password)
+			require.Equal(t, testcase.wantFirstName, updatedUser.FirstName)
+			require.Equal(t, testcase.wantLastName, updatedUser.LastName)
+			require.Equal(t, user.IsActive, updatedUser.IsActive)
+			require.Equal(t, user.IsSuperUser, updatedUser.IsSuperUser)
+			require.Equal(t, user.CreatedAt, updatedUser.CreatedAt)
+		})
+	}
+}
+
+func TestRepositoryUpdateUserError(t *testing.T) {
+	t.Parallel()
+
+	updatedFirstName := "Updatedfirstname"
+	updatedLastName := "Updatedlastname"
+
+	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = false
+	})
+
+	inactiveUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = false
+	})
+
+	testcases := []struct {
+		name      string
+		userUUID  string
+		firstName *string
+		lastName  *string
+	}{
+		{
+			name:      "Update neither first nor last name",
+			userUUID:  activeUser.UUID,
+			firstName: nil,
+			lastName:  nil,
+		},
+		{
+			name:      "Update non-existent user",
+			userUUID:  uuid.NewString(),
+			firstName: &updatedFirstName,
+			lastName:  &updatedLastName,
+		},
+		{
+			name:      "Update inactive user",
+			userUUID:  inactiveUser.UUID,
+			firstName: &updatedFirstName,
+			lastName:  &updatedLastName,
+		},
+	}
+
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			dbPool := testkitinternal.RequireCreateDatabasePool(t)
+			dbConn := testkitinternal.RequireCreateDatabaseConn(t, dbPool, context.Background())
+			repo := auth.NewRepository()
+
+			_, err := repo.UpdateUser(dbConn, testcase.userUUID, testcase.firstName, testcase.lastName)
+			require.ErrorIs(t, err, errutils.ErrDatabaseNoRowsAffected)
 		})
 	}
 }

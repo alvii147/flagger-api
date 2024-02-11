@@ -17,6 +17,7 @@ type Repository interface {
 	ActivateUserByUUID(dbConn *pgxpool.Conn, userUUID string) error
 	GetUserByEmail(dbConn *pgxpool.Conn, email string) (*User, error)
 	GetUserByUUID(dbConn *pgxpool.Conn, userUUID string) (*User, error)
+	UpdateUser(dbConn *pgxpool.Conn, userUUID string, firstName *string, lastName *string) (*User, error)
 	CreateAPIKey(dbConn *pgxpool.Conn, apiKey *APIKey) (*APIKey, error)
 	ListAPIKeysByUserUUID(dbConn *pgxpool.Conn, userUUID string) ([]*APIKey, error)
 	ListActiveAPIKeysByPrefix(dbConn *pgxpool.Conn, prefix string) ([]*APIKey, error)
@@ -62,8 +63,7 @@ RETURNING
 	last_name,
 	is_active,
 	is_superuser,
-	created_at
-;
+	created_at;
 	`
 
 	err := dbConn.QueryRow(
@@ -212,6 +212,62 @@ WHERE
 	}
 
 	return user, nil
+}
+
+// UpdateUser updates User first and last names
+func (repo *repository) UpdateUser(dbConn *pgxpool.Conn, userUUID string, firstName *string, lastName *string) (*User, error) {
+	if firstName == nil && lastName == nil {
+		return nil, fmt.Errorf("UpdateUser failed, all attributes are nil: %w", errutils.ErrDatabaseNoRowsAffected)
+	}
+
+	updatedUser := &User{}
+
+	q := `
+UPDATE
+	"User"
+SET
+	first_name = COALESCE($1, first_name),
+	last_name = COALESCE($2, last_name)
+WHERE
+	uuid = $3
+	AND is_active = TRUE
+RETURNING
+	uuid,
+	email,
+	password,
+	first_name,
+	last_name,
+	is_active,
+	is_superuser,
+	created_at;
+	`
+
+	err := dbConn.QueryRow(
+		context.Background(),
+		q,
+		firstName,
+		lastName,
+		userUUID,
+	).Scan(
+		&updatedUser.UUID,
+		&updatedUser.Email,
+		&updatedUser.Password,
+		&updatedUser.FirstName,
+		&updatedUser.LastName,
+		&updatedUser.IsActive,
+		&updatedUser.IsSuperUser,
+		&updatedUser.CreatedAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("UpdateUser failed: %w", errutils.ErrDatabaseNoRowsAffected)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("UpdateUser failed to dbConn.Scan: %w", err)
+	}
+
+	return updatedUser, nil
 }
 
 // CreateAPIKey creates API key from user UUID, prefix, hashed key, name, and expiry date.

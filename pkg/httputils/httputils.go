@@ -76,3 +76,8 @@ func GetAuthorizationHeader(header http.Header, authType string) (string, bool) 
 
 	return strings.TrimSpace(token), true
 }
+
+// IsHTTPSuccess determines whether or not a given status code is 2xx
+func IsHTTPSuccess(statusCode int) bool {
+	return statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices
+}

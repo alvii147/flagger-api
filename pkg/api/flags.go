@@ -3,13 +3,20 @@ package api
 import (
 	"time"
 
-	"github.com/alvii147/flagger-api/pkg/utils"
+	"github.com/alvii147/flagger-api/pkg/validate"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
 // CreateFlagRequest represents the request body for Flag creation requests.
 type CreateFlagRequest struct {
-	Name utils.JSONSlugString `json:"name"`
+	Name string `json:"name"`
+}
+
+func (r *CreateFlagRequest) Validate() (bool, map[string][]string) {
+	v := validate.NewValidator()
+	v.ValidatorStringNotBlank("name", r.Name)
+
+	return v.Passed(), v.Failures()
 }
 
 // CreateFlagResponse represents the response body for Flag creation requests.
@@ -70,8 +77,16 @@ type DisableFlagResponse struct {
 
 // UpdateFlagRequest represents the request body for Flag update requests.
 type UpdateFlagRequest struct {
-	Name      utils.JSONSlugString `json:"name"`
-	IsEnabled bool                 `json:"is_enabled"`
+	Name      string `json:"name"`
+	IsEnabled bool   `json:"is_enabled"`
+}
+
+func (r *UpdateFlagRequest) Validate() (bool, map[string][]string) {
+	v := validate.NewValidator()
+	v.ValidatorStringNotBlank("name", r.Name)
+	v.ValidateStringSlug("name", r.Name)
+
+	return v.Passed(), v.Failures()
 }
 
 // UpdateFlagResponse represents the response body for a single Flag in Flag update requests.
