@@ -11,14 +11,10 @@ import (
 	"time"
 
 	"github.com/alvii147/flagger-api/internal/auth"
-	"github.com/alvii147/flagger-api/internal/env"
 	"github.com/alvii147/flagger-api/internal/server"
 	"github.com/alvii147/flagger-api/internal/testkitinternal"
 	"github.com/alvii147/flagger-api/pkg/api"
 	"github.com/alvii147/flagger-api/pkg/testkit"
-	"github.com/alvii147/flagger-api/pkg/utils"
-	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
 )
@@ -120,8 +116,6 @@ func TestGetFlagNameParam(t *testing.T) {
 func TestFlagFlow(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 
@@ -135,20 +129,7 @@ func TestFlagFlow(t *testing.T) {
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
 	})
-
-	jti := uuid.NewString()
-	now := time.Now().UTC()
-	accessToken, err := jwt.NewWithClaims(
-		jwt.SigningMethodHS256,
-		&api.AuthJWTClaims{
-			Subject:   user.UUID,
-			TokenType: string(auth.JWTTypeAccess),
-			IssuedAt:  utils.JSONTimeStamp(now),
-			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Hour)),
-			JWTID:     jti,
-		},
-	).SignedString([]byte(config.SecretKey))
-	require.NoError(t, err)
+	accessToken, _ := testkitinternal.MustCreateUserAuthJWTs(user.UUID)
 
 	_, rawKey := testkitinternal.MustCreateUserAPIKey(t, user.UUID, nil)
 

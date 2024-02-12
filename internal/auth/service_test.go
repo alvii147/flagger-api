@@ -360,20 +360,7 @@ func TestServiceRefreshJWTSuccess(t *testing.T) {
 	svc := auth.NewService(dbPool, repo)
 
 	userUUID := uuid.NewString()
-	jti := uuid.NewString()
-	now := time.Now().UTC()
-
-	refreshToken, err := jwt.NewWithClaims(
-		jwt.SigningMethodHS256,
-		&api.AuthJWTClaims{
-			Subject:   userUUID,
-			TokenType: string(auth.JWTTypeRefresh),
-			IssuedAt:  utils.JSONTimeStamp(now),
-			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Hour)),
-			JWTID:     jti,
-		},
-	).SignedString([]byte(config.SecretKey))
-	require.NoError(t, err)
+	_, refreshToken := testkitinternal.MustCreateUserAuthJWTs(userUUID)
 
 	accessToken, err := svc.RefreshJWT(context.Background(), refreshToken)
 	require.NoError(t, err)

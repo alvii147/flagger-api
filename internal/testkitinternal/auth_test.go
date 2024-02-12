@@ -3,10 +3,15 @@ package testkitinternal_test
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/alvii147/flagger-api/internal/auth"
+	"github.com/alvii147/flagger-api/internal/env"
 	"github.com/alvii147/flagger-api/internal/testkitinternal"
+	"github.com/alvii147/flagger-api/pkg/api"
 	"github.com/alvii147/flagger-api/pkg/testkit"
+	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -66,6 +71,43 @@ func TestMustCreateUserDuplicateEmail(t *testing.T) {
 	testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.Email = email
 	})
+}
+
+func TestMustCreateUserAuthJWTs(t *testing.T) {
+	t.Parallel()
+
+	config := env.GetConfig()
+
+	userUUID := uuid.NewString()
+	accessToken, refreshToken := testkitinternal.MustCreateUserAuthJWTs(userUUID)
+
+	accessClaims := &api.AuthJWTClaims{}
+	parsedAccessToken, err := jwt.ParseWithClaims(accessToken, accessClaims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(config.SecretKey), nil
+	})
+	require.NoError(t, err)
+
+	require.NotNil(t, parsedAccessToken)
+	require.True(t, parsedAccessToken.Valid)
+	require.Equal(t, userUUID, accessClaims.Subject)
+	require.Equal(t, string(auth.JWTTypeAccess), accessClaims.TokenType)
+
+	testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), time.Time(accessClaims.IssuedAt))
+	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthAccessLifetime)), time.Time(accessClaims.ExpiresAt))
+
+	refreshClaims := &api.AuthJWTClaims{}
+	parsedRefreshToken, err := jwt.ParseWithClaims(refreshToken, refreshClaims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(config.SecretKey), nil
+	})
+	require.NoError(t, err)
+
+	require.NotNil(t, parsedRefreshToken)
+	require.True(t, parsedRefreshToken.Valid)
+	require.Equal(t, userUUID, refreshClaims.Subject)
+	require.Equal(t, string(auth.JWTTypeRefresh), refreshClaims.TokenType)
+
+	testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), time.Time(refreshClaims.IssuedAt))
+	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthRefreshLifetime)), time.Time(refreshClaims.ExpiresAt))
 }
 
 func TestMustCreateUserAPIKeySuccess(t *testing.T) {

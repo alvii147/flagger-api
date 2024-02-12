@@ -1,7 +1,6 @@
 package auth_test
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -19,7 +18,6 @@ import (
 	"github.com/alvii147/flagger-api/pkg/utils"
 	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,18 +30,7 @@ func TestJWTAuthMiddleware(t *testing.T) {
 	now := time.Now().UTC()
 	oneDayAgo := now.Add(-24 * time.Hour)
 
-	validAccessToken, err := jwt.NewWithClaims(
-		jwt.SigningMethodHS256,
-		&api.AuthJWTClaims{
-			Subject:   userUUID,
-			TokenType: string(auth.JWTTypeAccess),
-			IssuedAt:  utils.JSONTimeStamp(now),
-			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Hour)),
-			JWTID:     jti,
-		},
-	).SignedString([]byte(config.SecretKey))
-	require.NoError(t, err)
-
+	validAccessToken, _ := testkitinternal.MustCreateUserAuthJWTs(userUUID)
 	tokenOfInvalidType, err := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		&api.AuthJWTClaims{
@@ -225,14 +212,7 @@ func TestAPIKeyAuthMiddleware(t *testing.T) {
 	repo := auth.NewRepository()
 	svc := auth.NewService(dbPool, repo)
 
-	_, validAPIKey, err := svc.CreateAPIKey(
-		context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID),
-		"My API Key",
-		pgtype.Timestamp{
-			Valid: false,
-		},
-	)
-	require.NoError(t, err)
+	_, validAPIKey := testkitinternal.MustCreateUserAPIKey(t, user.UUID, nil)
 
 	validResponse := map[string]interface{}{
 		"email":      user.Email,

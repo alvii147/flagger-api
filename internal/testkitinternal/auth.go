@@ -61,8 +61,8 @@ func MustCreateUser(t *testing.T, modifier func(u *auth.User)) (*auth.User, stri
 	return user, password
 }
 
-// MustCreateUserAuthJWTs
-func MustCreateUserAuthAccessJWTs(userUUID string) (string, string) {
+// MustCreateUserAuthJWTs creates and returns access and refresh JWTs for User and panics on error.
+func MustCreateUserAuthJWTs(userUUID string) (string, string) {
 	config := env.GetConfig()
 
 	now := time.Now().UTC()
@@ -77,7 +77,7 @@ func MustCreateUserAuthAccessJWTs(userUUID string) (string, string) {
 		},
 	).SignedString([]byte(config.SecretKey))
 	if err != nil {
-		panic(fmt.Sprintf("MustCreateUserAPIKey failed to jwt.SignedString: %v", err))
+		panic(fmt.Sprintf("MustCreateUserAPIKey failed to jwt.Token.SignedString: %v", err))
 	}
 
 	refreshToken, err := jwt.NewWithClaims(
@@ -91,7 +91,7 @@ func MustCreateUserAuthAccessJWTs(userUUID string) (string, string) {
 		},
 	).SignedString([]byte(config.SecretKey))
 	if err != nil {
-		panic(fmt.Sprintf("MustCreateUserAPIKey failed to jwt.SignedString: %v", err))
+		panic(fmt.Sprintf("MustCreateUserAPIKey failed to jwt.Token.SignedString: %v", err))
 	}
 
 	return accessToken, refreshToken

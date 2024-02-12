@@ -109,30 +109,7 @@ func TestValidateAuthJWT(t *testing.T) {
 	now := time.Now().UTC()
 	oneDayAgo := now.Add(-24 * time.Hour)
 
-	validAccessToken, err := jwt.NewWithClaims(
-		jwt.SigningMethodHS256,
-		&api.AuthJWTClaims{
-			Subject:   userUUID,
-			TokenType: string(auth.JWTTypeAccess),
-			IssuedAt:  utils.JSONTimeStamp(now),
-			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Hour)),
-			JWTID:     jti,
-		},
-	).SignedString([]byte(config.SecretKey))
-	require.NoError(t, err)
-
-	validRefreshToken, err := jwt.NewWithClaims(
-		jwt.SigningMethodHS256,
-		&api.AuthJWTClaims{
-			Subject:   userUUID,
-			TokenType: string(auth.JWTTypeRefresh),
-			IssuedAt:  utils.JSONTimeStamp(now),
-			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Hour)),
-			JWTID:     jti,
-		},
-	).SignedString([]byte(config.SecretKey))
-	require.NoError(t, err)
-
+	validAccessToken, validRefreshToken := testkitinternal.MustCreateUserAuthJWTs(userUUID)
 	tokenOfInvalidType, err := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		&api.AuthJWTClaims{

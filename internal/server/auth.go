@@ -335,10 +335,10 @@ func (ctrl *controller) HandleRefreshJWT(w *httputils.ResponseWriter, r *http.Re
 		case errors.Is(err, errutils.ErrInvalidToken):
 			w.WriteJSON(
 				api.ErrorResponse{
-					Code:   api.ErrCodeInvalidCredentials,
-					Detail: api.ErrDetailInvalidToken,
+					Code:   api.ErrCodeInvalidRequest,
+					Detail: api.ErrDetailInvalidRequestData,
 				},
-				http.StatusUnauthorized,
+				http.StatusBadRequest,
 			)
 		default:
 			w.WriteJSON(
