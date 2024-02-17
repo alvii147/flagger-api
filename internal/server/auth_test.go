@@ -883,6 +883,171 @@ func TestHandleRefreshJWT(t *testing.T) {
 	}
 }
 
+func TestHandleCreateAPIKey(t *testing.T) {
+	t.Parallel()
+
+	ctrl, err := server.NewController()
+	require.NoError(t, err)
+
+	router := ctrl.Route()
+	srv := httptest.NewServer(router)
+
+	t.Cleanup(func() {
+		err = ctrl.Close()
+		require.NoError(t, err)
+	})
+
+	httpClient := &http.Client{
+		Timeout: 5 * time.Second,
+	}
+
+	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = true
+	})
+	userAccessJWT, _ := testkitinternal.MustCreateUserAuthJWTs(user.UUID)
+
+	expirationDate := time.Date(2038, 1, 19, 3, 14, 8, 0, time.UTC)
+	expirationDateString := "2038-01-19T03:14:08Z"
+
+	testcases := []struct {
+		name               string
+		headers            map[string]string
+		requestBody        string
+		wantStatusCode     int
+		wantAPIKeyName     string
+		wantExpirationDate bool
+		wantErrCode        string
+		wantErrDetail      string
+	}{
+		{
+			name: "Valid request with no expiration date",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", userAccessJWT),
+			},
+			requestBody: `
+				{
+					"name": "My non-expiring API key"
+				}
+			`,
+			wantStatusCode:     http.StatusCreated,
+			wantAPIKeyName:     "My non-expiring API key",
+			wantExpirationDate: false,
+			wantErrCode:        "",
+			wantErrDetail:      "",
+		},
+		{
+			name: "Valid request with expiration date",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", userAccessJWT),
+			},
+			requestBody: fmt.Sprintf(`
+				{
+					"name": "My expiring API key",
+					"expires_at": "%s"
+				}
+			`, expirationDateString),
+			wantStatusCode:     http.StatusCreated,
+			wantAPIKeyName:     "My expiring API key",
+			wantExpirationDate: true,
+			wantErrCode:        "",
+			wantErrDetail:      "",
+		},
+		{
+			name: "Name missing",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", userAccessJWT),
+			},
+			requestBody: fmt.Sprintf(`
+				{
+					"expires_at": "%s"
+				}
+			`, expirationDateString),
+			wantStatusCode:     http.StatusBadRequest,
+			wantAPIKeyName:     "My nameless API key",
+			wantExpirationDate: true,
+			wantErrCode:        api.ErrCodeInvalidRequest,
+			wantErrDetail:      api.ErrDetailInvalidRequestData,
+		},
+		{
+			name: "Invalid expiration date",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", userAccessJWT),
+			},
+			requestBody: `
+				{
+					"name": "My invalidly-expiring API key",
+					"expires_at": "1nv4l1dd4t3"
+				}
+			`,
+			wantStatusCode:     http.StatusBadRequest,
+			wantAPIKeyName:     "My invalidly-expiring API key",
+			wantExpirationDate: false,
+			wantErrCode:        api.ErrCodeInvalidRequest,
+			wantErrDetail:      api.ErrDetailInvalidRequestData,
+		},
+		{
+			name:    "Unauthenticated request",
+			headers: map[string]string{},
+			requestBody: `
+				{
+					"name": "My unauthenticated API key"
+				}
+			`,
+			wantStatusCode:     http.StatusUnauthorized,
+			wantAPIKeyName:     "My unauthenticated API key",
+			wantExpirationDate: false,
+			wantErrCode:        api.ErrCodeMissingCredentials,
+			wantErrDetail:      api.ErrDetailMissingCredentials,
+		},
+	}
+
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			req, err := http.NewRequest(
+				http.MethodPost,
+				srv.URL+"/auth/api-keys",
+				bytes.NewReader([]byte(testcase.requestBody)),
+			)
+			require.NoError(t, err)
+
+			for key, value := range testcase.headers {
+				req.Header.Add(key, value)
+			}
+
+			apiKeyCreatedAt := time.Now().UTC()
+			res, err := httpClient.Do(req)
+			require.NoError(t, err)
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+
+			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
+				defer res.Body.Close()
+				var createAPIKeyResp api.CreateAPIKeyResponse
+				err = json.NewDecoder(res.Body).Decode(&createAPIKeyResp)
+				require.NoError(t, err)
+
+				require.Equal(t, user.UUID, createAPIKeyResp.UserUUID)
+				require.Equal(t, testcase.wantAPIKeyName, createAPIKeyResp.Name)
+				testkit.RequireTimeAlmostEqual(t, apiKeyCreatedAt, createAPIKeyResp.CreatedAt)
+				testkit.RequirePGTimestampAlmostEqual(t, pgtype.Timestamp{
+					Time:  expirationDate,
+					Valid: testcase.wantExpirationDate,
+				}, createAPIKeyResp.ExpiresAt)
+			} else {
+				defer res.Body.Close()
+				var errResp api.ErrorResponse
+				err = json.NewDecoder(res.Body).Decode(&errResp)
+				require.NoError(t, err)
+
+				require.Equal(t, testcase.wantErrCode, errResp.Code)
+				require.Equal(t, testcase.wantErrDetail, errResp.Detail)
+			}
+		})
+	}
+}
+
 func TestAPIKeyFlow(t *testing.T) {
 	t.Parallel()
 
