@@ -285,9 +285,11 @@ func TestHandleCreateUser(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+			t.Cleanup(func() {
+				res.Body.Close()
+			})
 
 			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
-				defer res.Body.Close()
 				var createUserResp api.CreateUserResponse
 				err = json.NewDecoder(res.Body).Decode(&createUserResp)
 				require.NoError(t, err)
@@ -314,7 +316,6 @@ func TestHandleCreateUser(t *testing.T) {
 				mailLogs := mailclient.GetInMemMailLogs()
 				require.Len(t, mailLogs, mailCount)
 
-				defer res.Body.Close()
 				var errResp api.ErrorResponse
 				err = json.NewDecoder(res.Body).Decode(&errResp)
 				require.NoError(t, err)
@@ -445,9 +446,11 @@ func TestHandleActivateUser(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+			t.Cleanup(func() {
+				res.Body.Close()
+			})
 
 			if !httputils.IsHTTPSuccess(testcase.wantStatusCode) {
-				defer res.Body.Close()
 				var errResp api.ErrorResponse
 				err = json.NewDecoder(res.Body).Decode(&errResp)
 				require.NoError(t, err)
@@ -568,9 +571,11 @@ func TestHandleGetUserMe(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+			t.Cleanup(func() {
+				res.Body.Close()
+			})
 
 			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
-				defer res.Body.Close()
 				var getUserMeResp api.GetUserMeResponse
 				err = json.NewDecoder(res.Body).Decode(&getUserMeResp)
 				require.NoError(t, err)
@@ -581,7 +586,6 @@ func TestHandleGetUserMe(t *testing.T) {
 				require.Equal(t, testcase.user.LastName, getUserMeResp.LastName)
 				testkit.RequireTimeAlmostEqual(t, testcase.user.CreatedAt, getUserMeResp.CreatedAt)
 			} else {
-				defer res.Body.Close()
 				var errResp api.ErrorResponse
 				err = json.NewDecoder(res.Body).Decode(&errResp)
 				require.NoError(t, err)
@@ -723,9 +727,11 @@ func TestHandleCreateJWT(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+			t.Cleanup(func() {
+				res.Body.Close()
+			})
 
 			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
-				defer res.Body.Close()
 				var createTokenResp api.CreateTokenResponse
 				err = json.NewDecoder(res.Body).Decode(&createTokenResp)
 				require.NoError(t, err)
@@ -758,7 +764,6 @@ func TestHandleCreateJWT(t *testing.T) {
 				testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), time.Time(refreshClaims.IssuedAt))
 				testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthRefreshLifetime)), time.Time(refreshClaims.ExpiresAt))
 			} else {
-				defer res.Body.Close()
 				var errResp api.ErrorResponse
 				err = json.NewDecoder(res.Body).Decode(&errResp)
 				require.NoError(t, err)
@@ -850,9 +855,11 @@ func TestHandleRefreshJWT(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+			t.Cleanup(func() {
+				res.Body.Close()
+			})
 
 			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
-				defer res.Body.Close()
 				var refreshTokenResp api.RefreshTokenResponse
 				err = json.NewDecoder(res.Body).Decode(&refreshTokenResp)
 				require.NoError(t, err)
@@ -871,7 +878,6 @@ func TestHandleRefreshJWT(t *testing.T) {
 				testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), time.Time(claims.IssuedAt))
 				testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthAccessLifetime)), time.Time(claims.ExpiresAt))
 			} else {
-				defer res.Body.Close()
 				var errResp api.ErrorResponse
 				err = json.NewDecoder(res.Body).Decode(&errResp)
 				require.NoError(t, err)
@@ -1021,9 +1027,11 @@ func TestHandleCreateAPIKey(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+			t.Cleanup(func() {
+				res.Body.Close()
+			})
 
 			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
-				defer res.Body.Close()
 				var createAPIKeyResp api.CreateAPIKeyResponse
 				err = json.NewDecoder(res.Body).Decode(&createAPIKeyResp)
 				require.NoError(t, err)
@@ -1036,7 +1044,6 @@ func TestHandleCreateAPIKey(t *testing.T) {
 					Valid: testcase.wantExpirationDate,
 				}, createAPIKeyResp.ExpiresAt)
 			} else {
-				defer res.Body.Close()
 				var errResp api.ErrorResponse
 				err = json.NewDecoder(res.Body).Decode(&errResp)
 				require.NoError(t, err)

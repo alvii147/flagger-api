@@ -50,7 +50,9 @@ func TestCreatePoolSuccess(t *testing.T) {
 
 func TestCreatePoolBadConnString(t *testing.T) {
 	defaultConfig := env.GetConfig()
-	defer env.SetConfig(defaultConfig)
+	t.Cleanup(func() {
+		env.SetConfig(defaultConfig)
+	})
 
 	config := env.NewConfig()
 	config.PostgresUsername = ""

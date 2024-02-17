@@ -172,7 +172,9 @@ func TestJWTAuthMiddleware(t *testing.T) {
 			auth.JWTAuthMiddleware(next)(w, r)
 
 			result := rec.Result()
-			defer result.Body.Close()
+			t.Cleanup(func() {
+				result.Body.Close()
+			})
 
 			responseBodyBytes, err := io.ReadAll(result.Body)
 			require.NoError(t, err)
@@ -295,7 +297,9 @@ func TestAPIKeyAuthMiddleware(t *testing.T) {
 			auth.APIKeyAuthMiddleware(next, svc)(w, r)
 
 			result := rec.Result()
-			defer result.Body.Close()
+			t.Cleanup(func() {
+				result.Body.Close()
+			})
 
 			responseBodyBytes, err := io.ReadAll(result.Body)
 			require.NoError(t, err)

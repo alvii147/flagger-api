@@ -17,7 +17,9 @@ import (
 
 func TestLogTraffic(t *testing.T) {
 	defaultLogger := logging.GetLogger()
-	defer logging.SetLogger(defaultLogger)
+	t.Cleanup(func() {
+		logging.SetLogger(defaultLogger)
+	})
 
 	testcases := []struct {
 		name       string
@@ -133,7 +135,9 @@ func TestLogTraffic(t *testing.T) {
 
 func TestLoggerMiddleware(t *testing.T) {
 	defaultLogger := logging.GetLogger()
-	defer logging.SetLogger(defaultLogger)
+	t.Cleanup(func() {
+		logging.SetLogger(defaultLogger)
+	})
 
 	testcases := []struct {
 		name       string
