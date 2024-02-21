@@ -1,0 +1,13 @@
+# git
+.git
+.gitignore
+
+# vs code
+.vscode
+
+# OS specific
+.vscode/
+.DS_Store
+
+# misc
+README.md
