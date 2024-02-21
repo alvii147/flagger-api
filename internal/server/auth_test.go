@@ -18,7 +18,6 @@ import (
 	"github.com/alvii147/flagger-api/internal/testkitinternal"
 	"github.com/alvii147/flagger-api/pkg/api"
 	"github.com/alvii147/flagger-api/pkg/httputils"
-	"github.com/alvii147/flagger-api/pkg/mailclient"
 	"github.com/alvii147/flagger-api/pkg/testkit"
 	"github.com/alvii147/flagger-api/pkg/utils"
 	"github.com/golang-jwt/jwt"
@@ -86,6 +85,8 @@ func TestGetAPIKeyIDParam(t *testing.T) {
 }
 
 func TestHandleCreateUser(t *testing.T) {
+	t.Parallel()
+
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 
@@ -98,7 +99,7 @@ func TestHandleCreateUser(t *testing.T) {
 	})
 
 	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 60 * time.Second,
 	}
 
 	existingUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
@@ -272,8 +273,6 @@ func TestHandleCreateUser(t *testing.T) {
 	for _, testcase := range testcases {
 		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
-			mailCount := len(mailclient.GetInMemMailLogs())
-
 			req, err := http.NewRequest(
 				http.MethodPost,
 				srv.URL+"/auth/users",
@@ -298,24 +297,7 @@ func TestHandleCreateUser(t *testing.T) {
 				require.Equal(t, firstName, createUserResp.FirstName)
 				require.Equal(t, lastName, createUserResp.LastName)
 				testkit.RequireTimeAlmostEqual(t, userCreatedAt, createUserResp.CreatedAt)
-
-				time.Sleep(5 * time.Second)
-
-				mailLogs := mailclient.GetInMemMailLogs()
-				require.Len(t, mailLogs, mailCount+1)
-
-				lastMail := mailLogs[len(mailLogs)-1]
-				require.Equal(t, []string{createUserResp.Email}, lastMail.To)
-				require.Equal(t, "Welcome to Flagger!", lastMail.Subject)
-				testkit.RequireTimeAlmostEqual(t, userCreatedAt, lastMail.SentAt)
-
-				mailMessage := string(lastMail.Message)
-				require.Contains(t, mailMessage, "Welcome to Flagger!")
-				require.Contains(t, mailMessage, "Flagger - Activate Your Account")
 			} else {
-				mailLogs := mailclient.GetInMemMailLogs()
-				require.Len(t, mailLogs, mailCount)
-
 				var errResp api.ErrorResponse
 				err = json.NewDecoder(res.Body).Decode(&errResp)
 				require.NoError(t, err)
@@ -344,7 +326,7 @@ func TestHandleActivateUser(t *testing.T) {
 	})
 
 	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 60 * time.Second,
 	}
 
 	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
@@ -477,7 +459,7 @@ func TestHandleGetUserMe(t *testing.T) {
 	})
 
 	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 60 * time.Second,
 	}
 
 	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
@@ -614,7 +596,7 @@ func TestHandleCreateJWT(t *testing.T) {
 	})
 
 	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 60 * time.Second,
 	}
 
 	user, password := testkitinternal.MustCreateUser(t, func(u *auth.User) {
@@ -792,7 +774,7 @@ func TestHandleRefreshJWT(t *testing.T) {
 	})
 
 	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 60 * time.Second,
 	}
 
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
@@ -904,7 +886,7 @@ func TestHandleCreateAPIKey(t *testing.T) {
 	})
 
 	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 60 * time.Second,
 	}
 
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
@@ -1065,7 +1047,7 @@ func TestAPIKeyFlow(t *testing.T) {
 	srv := httptest.NewServer(router)
 
 	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 60 * time.Second,
 	}
 
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {

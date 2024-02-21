@@ -199,9 +199,8 @@ func validateActivationJWT(token string) (*api.ActivationJWTClaims, bool) {
 }
 
 // sendActivationMail sends activation email to User.
-func sendActivationMail(user *User) error {
+func sendActivationMail(user *User, mailClient mailclient.MailClient) error {
 	config := env.GetConfig()
-	mailClient := mailclient.GetMailClient()
 
 	activationToken, err := createActivationJWT(user.UUID)
 	if err != nil {
@@ -214,7 +213,7 @@ func sendActivationMail(user *User) error {
 		ActivationURL:  activationURL,
 	}
 
-	err = mailClient.SendMail([]string{user.Email}, "Welcome to Flagger!", "activation.txt", "activation.html", templateData)
+	err = mailClient.Send([]string{user.Email}, "Welcome to Flagger!", "activation.txt", "activation.html", templateData)
 	if err != nil {
 		return fmt.Errorf("sendActivationMail failed to mailClient.SendMail for email %s: %w", user.Email, err)
 	}

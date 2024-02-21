@@ -329,6 +329,10 @@ func TestValidateActivationJWT(t *testing.T) {
 }
 
 func TestSendActivationMail(t *testing.T) {
+	t.Parallel()
+
+	config := env.GetConfig()
+
 	user := &auth.User{
 		UUID:        uuid.NewString(),
 		Email:       testkit.GenerateFakeEmail(),
@@ -339,16 +343,15 @@ func TestSendActivationMail(t *testing.T) {
 		IsSuperUser: false,
 	}
 
-	mailLogs := mailclient.GetInMemMailLogs()
-	mailCount := len(mailLogs)
-
-	err := auth.SendActivationMail(user)
+	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
 	require.NoError(t, err)
 
-	mailLogs = mailclient.GetInMemMailLogs()
-	require.Len(t, mailLogs, mailCount+1)
+	mailCount := len(mailClient.MailLogs)
+	err = auth.SendActivationMail(user, mailClient)
+	require.NoError(t, err)
+	require.Len(t, mailClient.MailLogs, mailCount+1)
 
-	lastMail := mailLogs[len(mailLogs)-1]
+	lastMail := mailClient.MailLogs[len(mailClient.MailLogs)-1]
 	require.Equal(t, []string{user.Email}, lastMail.To)
 	require.Equal(t, "Welcome to Flagger!", lastMail.Subject)
 	testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), lastMail.SentAt)
@@ -359,6 +362,8 @@ func TestSendActivationMail(t *testing.T) {
 }
 
 func TestCreateAPIKey(t *testing.T) {
+	t.Parallel()
+
 	prefix, rawKey, hashedKey, err := auth.CreateAPIKey()
 	require.NoError(t, err)
 

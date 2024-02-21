@@ -9,7 +9,6 @@ import (
 	"github.com/alvii147/flagger-api/internal/env"
 	"github.com/alvii147/flagger-api/internal/server"
 	"github.com/alvii147/flagger-api/pkg/logging"
-	"github.com/alvii147/flagger-api/pkg/mailclient"
 )
 
 func main() {
@@ -18,20 +17,6 @@ func main() {
 
 	logger := logging.NewLogger(os.Stdout, os.Stderr)
 	logging.SetLogger(logger)
-
-	mailClient, err := mailclient.NewMailClient(
-		config.MailClientType,
-		config.SMTPHostname,
-		config.SMTPPort,
-		config.SMTPUsername,
-		config.SMTPPassword,
-		config.MailTemplatesDir,
-	)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to mail.NewMailClient: %v\n", err)
-		return
-	}
-	mailclient.SetMailClient(mailClient)
 
 	ctrl, err := server.NewController()
 	if err != nil {

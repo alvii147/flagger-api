@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
-	"os"
 	"strings"
 	"time"
 
@@ -20,33 +19,7 @@ const (
 
 // MailClient is used to handle sending of emails.
 type MailClient interface {
-	SendMail(to []string, subject string, textTemplate string, htmlTemplate string, templateData any) error
-}
-
-var mc MailClient
-
-// GetMailClient gets the currently set MailClient.
-func GetMailClient() MailClient {
-	return mc
-}
-
-// SetMailClient sets the current MailClient.
-func SetMailClient(newClient MailClient) {
-	mc = newClient
-}
-
-// NewMailClient returns a new MailClient.
-func NewMailClient(clientType string, hostname string, port int, username string, password string, templatesDir string) (MailClient, error) {
-	switch clientType {
-	case MailClientTypeSMTP:
-		return NewSMTPMailClient(hostname, port, username, password, templatesDir)
-	case MailClientTypeInMemory:
-		return NewInMemMailClient("support@flagger.com", templatesDir)
-	case MailClientTypeConsole:
-		return NewConsoleMailClient("support@flagger.com", os.Stdout, templatesDir)
-	default:
-		return nil, fmt.Errorf("NewMailClient failed, unknown mail client type %s", clientType)
-	}
+	Send(to []string, subject string, textTemplate string, htmlTemplate string, templateData any) error
 }
 
 // BuildMail builds multi-line email body using MIME format.

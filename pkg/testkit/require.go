@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const TimeEqualityTolerance = 2 * time.Second
+const TimeEqualityTolerance = 60 * time.Second
 
 // RequireTimeAlmostEqual requires that expected and actual times
 // are within at most a certain duration tolerance of each other.

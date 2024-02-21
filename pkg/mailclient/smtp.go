@@ -17,7 +17,7 @@ type smtpMailClient struct {
 }
 
 // NewSMTPMailClient returns a new smtpMailClient.
-func NewSMTPMailClient(hostname string, port int, username string, password string, templatesDir string) (MailClient, error) {
+func NewSMTPMailClient(hostname string, port int, username string, password string, templatesDir string) (*smtpMailClient, error) {
 	tmplDirContents := templatesDir + "/*"
 	tmpl, err := template.ParseGlob(tmplDirContents)
 	if err != nil {
@@ -33,17 +33,17 @@ func NewSMTPMailClient(hostname string, port int, username string, password stri
 	}, nil
 }
 
-// SendMail sends an email through SMTP server.
-func (smc *smtpMailClient) SendMail(to []string, subject string, textTemplate string, htmlTemplate string, templateData interface{}) error {
+// Send sends an email through SMTP server.
+func (smc *smtpMailClient) Send(to []string, subject string, textTemplate string, htmlTemplate string, templateData interface{}) error {
 	msg, err := BuildMail(smc.username, to, subject, textTemplate, htmlTemplate, templateData, smc.tmpl)
 	if err != nil {
-		return fmt.Errorf("SendMail failed to BuildMail: %w", err)
+		return fmt.Errorf("Send failed to BuildMail: %w", err)
 	}
 
 	auth := smtp.PlainAuth("", smc.username, smc.password, smc.hostname)
 	err = smtp.SendMail(smc.addr, auth, smc.username, to, msg)
 	if err != nil {
-		return fmt.Errorf("SendMail failed to smtp.SendMail: %w", err)
+		return fmt.Errorf("Send failed to smtp.SendMail: %w", err)
 	}
 
 	return nil

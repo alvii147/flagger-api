@@ -8,6 +8,7 @@ import (
 
 	"github.com/alvii147/flagger-api/pkg/errutils"
 	"github.com/alvii147/flagger-api/pkg/logging"
+	"github.com/alvii147/flagger-api/pkg/mailclient"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -30,13 +31,15 @@ type Service interface {
 // service implements Service.
 type service struct {
 	dbPool     *pgxpool.Pool
+	mailClient mailclient.MailClient
 	repository Repository
 }
 
 // NewService returns a new Service.
-func NewService(dbPool *pgxpool.Pool, repo Repository) Service {
+func NewService(dbPool *pgxpool.Pool, mailClient mailclient.MailClient, repo Repository) Service {
 	return &service{
 		dbPool:     dbPool,
+		mailClient: mailClient,
 		repository: repo,
 	}
 }
@@ -88,7 +91,7 @@ func (svc *service) CreateUser(
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := sendActivationMail(user)
+		err := sendActivationMail(user, svc.mailClient)
 		if err != nil {
 			logger.LogError("CreateUser failed to sendActivationMail:", err)
 		}

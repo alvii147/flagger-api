@@ -123,7 +123,7 @@ func TestFlagFlow(t *testing.T) {
 	srv := httptest.NewServer(router)
 
 	httpClient := &http.Client{
-		Timeout: 5 * time.Second,
+		Timeout: 60 * time.Second,
 	}
 
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {

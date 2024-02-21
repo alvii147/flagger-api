@@ -26,10 +26,10 @@ func TestConsoleMailClient(t *testing.T) {
 		"Value": 42,
 	}
 
-	err = mailClient.SendMail([]string{to}, subject, textTemplate, htmlTemplate, templateData)
+	err = mailClient.Send([]string{to}, subject, textTemplate, htmlTemplate, templateData)
 	require.NoError(t, err)
 
-	textMsg, htmlMsg := testkit.MustParseMailMessage(string(buf.Bytes()))
+	textMsg, htmlMsg := testkit.MustParseMailMessage(buf.String())
 
 	require.Regexp(t, `Content-Type:\s*text\/plain;\s*charset\s*=\s*"utf-8"`, textMsg)
 	require.Regexp(t, `MIME-Version:\s*1.0`, textMsg)

@@ -16,8 +16,7 @@ func TestInMemMailClient(t *testing.T) {
 	mailClient, err := mailclient.NewInMemMailClient(username, "pkg/mailclient")
 	require.NoError(t, err)
 
-	mailLogs := mailclient.GetInMemMailLogs()
-	mailCount := len(mailLogs)
+	mailCount := len(mailClient.MailLogs)
 
 	to := testkit.GenerateFakeEmail()
 	subject := testkit.MustGenerateRandomString(12, true, true, true)
@@ -27,13 +26,12 @@ func TestInMemMailClient(t *testing.T) {
 		"Value": 42,
 	}
 
-	err = mailClient.SendMail([]string{to}, subject, textTemplate, htmlTemplate, templateData)
+	err = mailClient.Send([]string{to}, subject, textTemplate, htmlTemplate, templateData)
 	require.NoError(t, err)
 
-	mailLogs = mailclient.GetInMemMailLogs()
-	require.Len(t, mailLogs, mailCount+1)
+	require.Len(t, mailClient.MailLogs, mailCount+1)
 
-	lastMail := mailLogs[len(mailLogs)-1]
+	lastMail := mailClient.MailLogs[len(mailClient.MailLogs)-1]
 	require.Equal(t, username, lastMail.From)
 	require.Equal(t, []string{to}, lastMail.To)
 	require.Equal(t, subject, lastMail.Subject)

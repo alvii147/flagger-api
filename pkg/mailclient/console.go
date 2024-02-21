@@ -15,7 +15,7 @@ type consoleMailClient struct {
 }
 
 // NewConsoleMailClient returns a new consoleMailClient.
-func NewConsoleMailClient(username string, writer io.Writer, templatesDir string) (MailClient, error) {
+func NewConsoleMailClient(username string, writer io.Writer, templatesDir string) (*consoleMailClient, error) {
 	tmplDirContents := templatesDir + "/*"
 	tmpl, err := template.ParseGlob(tmplDirContents)
 	if err != nil {
@@ -31,11 +31,11 @@ func NewConsoleMailClient(username string, writer io.Writer, templatesDir string
 	return mailClient, nil
 }
 
-// SendMail prints email body to the console.
-func (cmc *consoleMailClient) SendMail(to []string, subject string, textTemplate string, htmlTemplate string, templateData any) error {
+// Send prints email body to the console.
+func (cmc *consoleMailClient) Send(to []string, subject string, textTemplate string, htmlTemplate string, templateData any) error {
 	msg, err := BuildMail(cmc.username, to, subject, textTemplate, htmlTemplate, templateData, cmc.tmpl)
 	if err != nil {
-		return fmt.Errorf("SendMail failed to BuildMail: %w", err)
+		return fmt.Errorf("Send failed to BuildMail: %w", err)
 	}
 
 	fmt.Fprint(cmc.writer, string(msg))

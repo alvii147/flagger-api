@@ -6,13 +6,6 @@ import (
 	"time"
 )
 
-// inMemMailClient implements a MailClient that saves email data in local memory.
-// This should typically be used in unit tests.
-type inMemMailClient struct {
-	username string
-	tmpl     *template.Template
-}
-
 // inMemMailLogEntry represents an in-memory entry of an email event.
 type inMemMailLogEntry struct {
 	From    string
@@ -22,15 +15,16 @@ type inMemMailLogEntry struct {
 	SentAt  time.Time
 }
 
-var inMemMailLogs = []inMemMailLogEntry{}
-
-// GetInMemMailLogs gets the current set of in-memory MailLogs.
-func GetInMemMailLogs() []inMemMailLogEntry {
-	return inMemMailLogs
+// inMemMailClient implements a MailClient that saves email data in local memory.
+// This should typically be used in unit tests.
+type inMemMailClient struct {
+	username string
+	MailLogs []inMemMailLogEntry
+	tmpl     *template.Template
 }
 
 // NewInMemMailClient returns a new inMemMailClient.
-func NewInMemMailClient(username string, templatesDir string) (MailClient, error) {
+func NewInMemMailClient(username string, templatesDir string) (*inMemMailClient, error) {
 	tmplDirContents := "../../" + templatesDir + "/*"
 	tmpl, err := template.ParseGlob(tmplDirContents)
 	if err != nil {
@@ -45,15 +39,15 @@ func NewInMemMailClient(username string, templatesDir string) (MailClient, error
 	return mailClient, nil
 }
 
-// SendMail adds an email event to in-memory storage.
-func (immc *inMemMailClient) SendMail(to []string, subject string, textTemplate string, htmlTemplate string, templateData any) error {
+// Send adds an email event to in-memory storage.
+func (immc *inMemMailClient) Send(to []string, subject string, textTemplate string, htmlTemplate string, templateData any) error {
 	msg, err := BuildMail(immc.username, to, subject, textTemplate, htmlTemplate, templateData, immc.tmpl)
 	if err != nil {
-		return fmt.Errorf("SendMail failed to BuildMail: %w", err)
+		return fmt.Errorf("Send failed to BuildMail: %w", err)
 	}
 
-	inMemMailLogs = append(
-		inMemMailLogs,
+	immc.MailLogs = append(
+		immc.MailLogs,
 		inMemMailLogEntry{
 			From:    immc.username,
 			To:      to,

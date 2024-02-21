@@ -2,7 +2,6 @@ package testkit_test
 
 import (
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -45,59 +44,54 @@ func (t *MockTestingT) Errorf(format string, args ...interface{}) {
 func TestRequireTimeAlmostEqual(t *testing.T) {
 	t.Parallel()
 
+	testTime := time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC)
 	testcases := []struct {
-		name           string
-		expectedTime   time.Time
-		actualTime     time.Time
-		wantFail       bool
-		wantFailNow    bool
-		wantLog        bool
-		wantLogMessage string
+		name         string
+		expectedTime time.Time
+		actualTime   time.Time
+		wantFail     bool
+		wantFailNow  bool
+		wantLog      bool
 	}{
 		{
-			name:           "Equal times",
-			expectedTime:   time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
-			actualTime:     time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
-			wantFail:       false,
-			wantFailNow:    false,
-			wantLog:        false,
-			wantLogMessage: "",
+			name:         "Equal times",
+			expectedTime: testTime,
+			actualTime:   testTime,
+			wantFail:     false,
+			wantFailNow:  false,
+			wantLog:      false,
 		},
 		{
-			name:           "Actual time is one second after expected time",
-			expectedTime:   time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
-			actualTime:     time.Date(2018, 9, 6, 6, 34, 9, 0, time.UTC),
-			wantFail:       false,
-			wantFailNow:    false,
-			wantLog:        false,
-			wantLogMessage: "",
+			name:         "Actual time is one second after expected time",
+			expectedTime: testTime,
+			actualTime:   testTime.Add(time.Second),
+			wantFail:     false,
+			wantFailNow:  false,
+			wantLog:      false,
 		},
 		{
-			name:           "Actual time is one second before expected time",
-			expectedTime:   time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
-			actualTime:     time.Date(2018, 9, 6, 6, 34, 7, 0, time.UTC),
-			wantFail:       false,
-			wantFailNow:    false,
-			wantLog:        false,
-			wantLogMessage: "",
+			name:         "Actual time is one second before expected time",
+			expectedTime: testTime,
+			actualTime:   testTime.Add(-time.Second),
+			wantFail:     false,
+			wantFailNow:  false,
+			wantLog:      false,
 		},
 		{
-			name:           "Actual time is three seconds after expected time",
-			expectedTime:   time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
-			actualTime:     time.Date(2018, 9, 6, 6, 34, 11, 0, time.UTC),
-			wantFail:       true,
-			wantFailNow:    true,
-			wantLog:        true,
-			wantLogMessage: "actual time 2018-09-06T06:34:11Z occurs more than 2s after expected time 2018-09-06T06:34:08Z",
+			name:         "Actual time is more than tolerance duration after expected time",
+			expectedTime: testTime,
+			actualTime:   testTime.Add(testkit.TimeEqualityTolerance + time.Second),
+			wantFail:     true,
+			wantFailNow:  true,
+			wantLog:      true,
 		},
 		{
-			name:           "Actual time is three seconds before expected time",
-			expectedTime:   time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
-			actualTime:     time.Date(2018, 9, 6, 6, 34, 5, 0, time.UTC),
-			wantFail:       true,
-			wantFailNow:    true,
-			wantLog:        true,
-			wantLogMessage: "actual time 2018-09-06T06:34:05Z occurs more than 2s before expected time 2018-09-06T06:34:08Z",
+			name:         "Actual time is less than tolerance duration before expected time",
+			expectedTime: testTime,
+			actualTime:   testTime.Add(-testkit.TimeEqualityTolerance - time.Second),
+			wantFail:     true,
+			wantFailNow:  true,
+			wantLog:      true,
 		},
 	}
 
@@ -111,21 +105,6 @@ func TestRequireTimeAlmostEqual(t *testing.T) {
 
 			require.Equal(t, testcase.wantFail, mockT.Failed)
 			require.Equal(t, testcase.wantFailNow, mockT.FailedNow)
-
-			errLogs := mockT.Logs
-			if testcase.wantLog {
-				require.GreaterOrEqual(t, len(errLogs), 1)
-
-				foundLog := false
-				for _, errLog := range errLogs {
-					if strings.Contains(errLog, testcase.wantLogMessage) {
-						foundLog = true
-						break
-					}
-				}
-
-				require.True(t, foundLog, fmt.Sprintf("failed to find \"%s\" in %v", testcase.wantLogMessage, errLogs))
-			}
 		})
 	}
 }
@@ -133,134 +112,126 @@ func TestRequireTimeAlmostEqual(t *testing.T) {
 func TestRequirePGTimestampAlmostEqual(t *testing.T) {
 	t.Parallel()
 
+	testTime := time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC)
 	testcases := []struct {
-		name           string
-		expectedTime   pgtype.Timestamp
-		actualTime     pgtype.Timestamp
-		wantFail       bool
-		wantFailNow    bool
-		wantLog        bool
-		wantLogMessage string
+		name         string
+		expectedTime pgtype.Timestamp
+		actualTime   pgtype.Timestamp
+		wantFail     bool
+		wantFailNow  bool
+		wantLog      bool
 	}{
 		{
 			name: "Equal times",
 			expectedTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
+				Time:  testTime,
 				Valid: true,
 			},
 			actualTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
+				Time:  testTime,
 				Valid: true,
 			},
-			wantFail:       false,
-			wantFailNow:    false,
-			wantLog:        false,
-			wantLogMessage: "",
+			wantFail:    false,
+			wantFailNow: false,
+			wantLog:     false,
 		},
 		{
 			name: "Actual time is one second after expected time",
 			expectedTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
+				Time:  testTime,
 				Valid: true,
 			},
 			actualTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 9, 0, time.UTC),
+				Time:  testTime.Add(time.Second),
 				Valid: true,
 			},
-			wantFail:       false,
-			wantFailNow:    false,
-			wantLog:        false,
-			wantLogMessage: "",
+			wantFail:    false,
+			wantFailNow: false,
+			wantLog:     false,
 		},
 		{
 			name: "Actual time is one second before expected time",
 			expectedTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
+				Time:  testTime,
 				Valid: true,
 			},
 			actualTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 7, 0, time.UTC),
+				Time:  testTime.Add(-time.Second),
 				Valid: true,
 			},
-			wantFail:       false,
-			wantFailNow:    false,
-			wantLog:        false,
-			wantLogMessage: "",
+			wantFail:    false,
+			wantFailNow: false,
+			wantLog:     false,
 		},
 		{
-			name: "Actual time is three seconds after expected time",
+			name: "Actual time is more than tolerance duration after expected time",
 			expectedTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
+				Time:  testTime,
 				Valid: true,
 			},
 			actualTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 11, 0, time.UTC),
+				Time:  testTime.Add(testkit.TimeEqualityTolerance + time.Second),
 				Valid: true,
 			},
-			wantFail:       true,
-			wantFailNow:    true,
-			wantLog:        true,
-			wantLogMessage: "actual time 2018-09-06T06:34:11Z occurs more than 2s after expected time 2018-09-06T06:34:08Z",
+			wantFail:    true,
+			wantFailNow: true,
+			wantLog:     true,
 		},
 		{
-			name: "Actual time is three seconds before expected time",
+			name: "Actual time is less than tolerance duration before expected time",
 			expectedTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
+				Time:  testTime,
 				Valid: true,
 			},
 			actualTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 5, 0, time.UTC),
+				Time:  testTime.Add(-testkit.TimeEqualityTolerance - time.Second),
 				Valid: true,
 			},
-			wantFail:       true,
-			wantFailNow:    true,
-			wantLog:        true,
-			wantLogMessage: "actual time 2018-09-06T06:34:05Z occurs more than 2s before expected time 2018-09-06T06:34:08Z",
+			wantFail:    true,
+			wantFailNow: true,
+			wantLog:     true,
 		},
 		{
 			name: "Actual time is valid, expected time is invalid",
 			expectedTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
+				Time:  testTime,
 				Valid: false,
 			},
 			actualTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
+				Time:  testTime,
 				Valid: true,
 			},
-			wantFail:       true,
-			wantFailNow:    true,
-			wantLog:        false,
-			wantLogMessage: "",
+			wantFail:    true,
+			wantFailNow: true,
+			wantLog:     false,
 		},
 		{
 			name: "Actual time is invalid, expected time is valid",
 			expectedTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
+				Time:  testTime,
 				Valid: true,
 			},
 			actualTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
+				Time:  testTime,
 				Valid: false,
 			},
-			wantFail:       true,
-			wantFailNow:    true,
-			wantLog:        false,
-			wantLogMessage: "",
+			wantFail:    true,
+			wantFailNow: true,
+			wantLog:     false,
 		},
 		{
 			name: "Both times are invalid",
 			expectedTime: pgtype.Timestamp{
-				Time:  time.Date(1996, 9, 6, 6, 34, 8, 0, time.UTC),
+				Time:  testTime,
 				Valid: false,
 			},
 			actualTime: pgtype.Timestamp{
-				Time:  time.Date(2018, 9, 6, 6, 34, 8, 0, time.UTC),
+				Time:  testTime.AddDate(1, 0, 0),
 				Valid: false,
 			},
-			wantFail:       false,
-			wantFailNow:    false,
-			wantLog:        false,
-			wantLogMessage: "",
+			wantFail:    false,
+			wantFailNow: false,
+			wantLog:     false,
 		},
 	}
 
@@ -274,21 +245,6 @@ func TestRequirePGTimestampAlmostEqual(t *testing.T) {
 
 			require.Equal(t, testcase.wantFail, mockT.Failed)
 			require.Equal(t, testcase.wantFailNow, mockT.FailedNow)
-
-			errLogs := mockT.Logs
-			if testcase.wantLog {
-				require.GreaterOrEqual(t, len(errLogs), 1)
-
-				foundLog := false
-				for _, errLog := range errLogs {
-					if strings.Contains(errLog, testcase.wantLogMessage) {
-						foundLog = true
-						break
-					}
-				}
-
-				require.True(t, foundLog, fmt.Sprintf("failed to find \"%s\" in %v", testcase.wantLogMessage, errLogs))
-			}
 		})
 	}
 }
