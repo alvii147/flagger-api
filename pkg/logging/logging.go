@@ -7,6 +7,18 @@ import (
 	"runtime"
 )
 
+// GetLongFileName gets filename that called the log function in long format.
+// If it is unable to capture the calling filename, it returns an empty string.
+func GetLongFileName() string {
+	_, file, line, ok := runtime.Caller(2)
+	longfile := ""
+	if ok {
+		longfile = fmt.Sprintf("%s:%d:", file, line)
+	}
+
+	return longfile
+}
+
 // Logger logs at debug, info, warn, and error levels.
 type Logger interface {
 	LogDebug(v ...interface{})
@@ -43,18 +55,6 @@ func NewLogger(stdout io.Writer, stderr io.Writer) *logger {
 		warnLogger:  log.New(stdout, "[W] ", log.Ldate|log.Ltime|log.LUTC),
 		errorLogger: log.New(stderr, "[E] ", log.Ldate|log.Ltime|log.LUTC),
 	}
-}
-
-// GetLongFileName gets filename that called the log function in long format.
-// If it is unable to capture the calling filename, it returns an empty string.
-func GetLongFileName() string {
-	_, file, line, ok := runtime.Caller(2)
-	longfile := ""
-	if ok {
-		longfile = fmt.Sprintf("%s:%d:", file, line)
-	}
-
-	return longfile
 }
 
 // LogDebug logs at debug level.
