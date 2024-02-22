@@ -2,7 +2,8 @@ package mailclient
 
 import (
 	"fmt"
-	"html/template"
+	htmltemplate "html/template"
+	texttemplate "text/template"
 	"time"
 )
 
@@ -20,28 +21,24 @@ type inMemMailLogEntry struct {
 type inMemMailClient struct {
 	username string
 	MailLogs []inMemMailLogEntry
-	tmpl     *template.Template
 }
 
 // NewInMemMailClient returns a new inMemMailClient.
-func NewInMemMailClient(username string, templatesDir string) (*inMemMailClient, error) {
-	tmplDirContents := "../../" + templatesDir + "/*"
-	tmpl, err := template.ParseGlob(tmplDirContents)
-	if err != nil {
-		return nil, fmt.Errorf("NewInMemMailClient failed to template.ParseGlob %s: %w", tmplDirContents, err)
-	}
-
-	mailClient := &inMemMailClient{
+func NewInMemMailClient(username string) *inMemMailClient {
+	return &inMemMailClient{
 		username: username,
-		tmpl:     tmpl,
 	}
-
-	return mailClient, nil
 }
 
 // Send adds an email event to in-memory storage.
-func (immc *inMemMailClient) Send(to []string, subject string, textTemplate string, htmlTemplate string, templateData any) error {
-	msg, err := BuildMail(immc.username, to, subject, textTemplate, htmlTemplate, templateData, immc.tmpl)
+func (immc *inMemMailClient) Send(
+	to []string,
+	subject string,
+	textTmpl *texttemplate.Template,
+	htmlTmpl *htmltemplate.Template,
+	tmplData interface{},
+) error {
+	msg, err := BuildMail(immc.username, to, subject, textTmpl, htmlTmpl, tmplData)
 	if err != nil {
 		return fmt.Errorf("Send failed to BuildMail: %w", err)
 	}

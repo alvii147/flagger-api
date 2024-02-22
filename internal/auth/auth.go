@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/alvii147/flagger-api/internal/env"
+	"github.com/alvii147/flagger-api/internal/templatesmanager"
 	"github.com/alvii147/flagger-api/pkg/api"
 	"github.com/alvii147/flagger-api/pkg/mailclient"
 	"github.com/alvii147/flagger-api/pkg/utils"
@@ -38,12 +39,6 @@ type APIKey struct {
 	Name      string           `db:"name"`
 	CreatedAt time.Time        `db:"created_at"`
 	ExpiresAt pgtype.Timestamp `db:"expires_at"`
-}
-
-// ActivationEmailTemplateData represents data for User activation email templates.
-type ActivationEmailTemplateData struct {
-	RecipientEmail string
-	ActivationURL  string
 }
 
 // JWTType is a string representing type of JWT.
@@ -199,7 +194,7 @@ func validateActivationJWT(token string) (*api.ActivationJWTClaims, bool) {
 }
 
 // sendActivationMail sends activation email to User.
-func sendActivationMail(user *User, mailClient mailclient.MailClient) error {
+func sendActivationMail(user *User, mailClient mailclient.MailClient, templatesManager templatesmanager.Manager) error {
 	config := env.GetConfig()
 
 	activationToken, err := createActivationJWT(user.UUID)
@@ -208,12 +203,17 @@ func sendActivationMail(user *User, mailClient mailclient.MailClient) error {
 	}
 
 	activationURL := fmt.Sprintf(config.FrontendBaseURL+config.FrontendActivationRoute, activationToken)
-	templateData := ActivationEmailTemplateData{
+	tmplData := templatesmanager.ActivationEmailTemplateData{
 		RecipientEmail: user.Email,
 		ActivationURL:  activationURL,
 	}
 
-	err = mailClient.Send([]string{user.Email}, "Welcome to Flagger!", "activation.txt", "activation.html", templateData)
+	textTmpl, htmlTmpl, err := templatesManager.Load("activation")
+	if err != nil {
+		return fmt.Errorf("sendActivationMail failed to templates.LoadTemplate %s: %w", "activation", err)
+	}
+
+	err = mailClient.Send([]string{user.Email}, "Welcome to Flagger!", textTmpl, htmlTmpl, tmplData)
 	if err != nil {
 		return fmt.Errorf("sendActivationMail failed to mailClient.SendMail for email %s: %w", user.Email, err)
 	}

@@ -1,8 +1,9 @@
 package mailclient_test
 
 import (
-	"html/template"
+	htmltemplate "html/template"
 	"testing"
+	texttemplate "text/template"
 
 	"github.com/alvii147/flagger-api/pkg/mailclient"
 	"github.com/alvii147/flagger-api/pkg/testkit"
@@ -15,22 +16,21 @@ func TestBuildMail(t *testing.T) {
 	from := testkit.GenerateFakeEmail()
 	to := testkit.GenerateFakeEmail()
 	subject := testkit.MustGenerateRandomString(12, true, true, true)
-	textTemplate := "tmpl.txt"
-	htmlTemplate := "tmpl.html"
-	templateData := map[string]int{
+	textTmpl, err := texttemplate.New("textTmpl").Parse("Test Template Content: {{ .Value }}")
+	require.NoError(t, err)
+	htmlTmpl, err := htmltemplate.New("htmlTmpl").Parse("<div>Test Template Content: {{ .Value }}</div>")
+	require.NoError(t, err)
+	tmplData := map[string]int{
 		"Value": 42,
 	}
-	templateGlob, err := template.ParseGlob("./*")
-	require.NoError(t, err)
 
 	msg, err := mailclient.BuildMail(
 		from,
 		[]string{to},
 		subject,
-		textTemplate,
-		htmlTemplate,
-		templateData,
-		templateGlob,
+		textTmpl,
+		htmlTmpl,
+		tmplData,
 	)
 	require.NoError(t, err)
 

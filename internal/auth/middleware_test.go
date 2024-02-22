@@ -11,6 +11,7 @@ import (
 
 	"github.com/alvii147/flagger-api/internal/auth"
 	"github.com/alvii147/flagger-api/internal/env"
+	"github.com/alvii147/flagger-api/internal/templatesmanager"
 	"github.com/alvii147/flagger-api/internal/testkitinternal"
 	"github.com/alvii147/flagger-api/pkg/api"
 	"github.com/alvii147/flagger-api/pkg/httputils"
@@ -207,18 +208,15 @@ func TestJWTAuthMiddleware(t *testing.T) {
 func TestAPIKeyAuthMiddleware(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
 	})
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	_, validAPIKey := testkitinternal.MustCreateUserAPIKey(t, user.UUID, nil)
 

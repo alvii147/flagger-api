@@ -36,4 +36,3 @@ services:
       - ./cmd:/app/cmd
       - ./internal:/app/internal
       - ./pkg:/app/pkg
-      - ./templates:/app/templates

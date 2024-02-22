@@ -2,8 +2,9 @@ package mailclient
 
 import (
 	"fmt"
-	"html/template"
+	htmltemplate "html/template"
 	"net/smtp"
+	texttemplate "text/template"
 )
 
 // smtpMailClient implements a MailClient that sends email through SMTP server.
@@ -13,29 +14,27 @@ type smtpMailClient struct {
 	addr     string
 	username string
 	password string
-	tmpl     *template.Template
 }
 
 // NewSMTPMailClient returns a new smtpMailClient.
-func NewSMTPMailClient(hostname string, port int, username string, password string, templatesDir string) (*smtpMailClient, error) {
-	tmplDirContents := templatesDir + "/*"
-	tmpl, err := template.ParseGlob(tmplDirContents)
-	if err != nil {
-		return nil, fmt.Errorf("NewSMTPMailClient failed to template.ParseGlob %s: %w", tmplDirContents, err)
-	}
-
+func NewSMTPMailClient(hostname string, port int, username string, password string) *smtpMailClient {
 	return &smtpMailClient{
 		hostname: hostname,
 		addr:     fmt.Sprintf("%s:%d", hostname, port),
 		username: username,
 		password: password,
-		tmpl:     tmpl,
-	}, nil
+	}
 }
 
 // Send sends an email through SMTP server.
-func (smc *smtpMailClient) Send(to []string, subject string, textTemplate string, htmlTemplate string, templateData interface{}) error {
-	msg, err := BuildMail(smc.username, to, subject, textTemplate, htmlTemplate, templateData, smc.tmpl)
+func (smc *smtpMailClient) Send(
+	to []string,
+	subject string,
+	textTmpl *texttemplate.Template,
+	htmlTmpl *htmltemplate.Template,
+	tmplData interface{},
+) error {
+	msg, err := BuildMail(smc.username, to, subject, textTmpl, htmlTmpl, tmplData)
 	if err != nil {
 		return fmt.Errorf("Send failed to BuildMail: %w", err)
 	}

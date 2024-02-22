@@ -29,7 +29,6 @@ type Config struct {
 	SMTPUsername            string `env:"FLAGGERAPI_SMTP_USERNAME"`
 	SMTPPassword            string `env:"FLAGGERAPI_SMTP_PASSWORD"`
 	MailClientType          string `env:"FLAGGERAPI_MAIL_CLIENT_TYPE"`
-	MailTemplatesDir        string `env:"FLAGGERAPI_MAIL_TEMPLATES_DIR"`
 }
 
 var config *Config
@@ -66,7 +65,6 @@ func defaultConfig() *Config {
 		SMTPUsername:            "",
 		SMTPPassword:            "",
 		MailClientType:          "console",
-		MailTemplatesDir:        "templates/email",
 	}
 }
 

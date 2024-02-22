@@ -5,6 +5,5 @@ WORKDIR /app
 COPY ./go.* ./
 COPY ./vendor/ ./vendor/
 COPY ./cmd/ ./cmd/
-COPY ./templates/ ./templates/
 COPY ./pkg/ ./pkg/
 COPY ./internal/ ./internal/

@@ -49,8 +49,6 @@ func TestCreatePoolSuccess(t *testing.T) {
 }
 
 func TestCreatePoolBadConnString(t *testing.T) {
-	t.Parallel()
-
 	defaultConfig := env.GetConfig()
 	t.Cleanup(func() {
 		env.SetConfig(defaultConfig)

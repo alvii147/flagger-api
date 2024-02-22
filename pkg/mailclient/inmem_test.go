@@ -1,7 +1,9 @@
 package mailclient_test
 
 import (
+	htmltemplate "html/template"
 	"testing"
+	texttemplate "text/template"
 	"time"
 
 	"github.com/alvii147/flagger-api/pkg/mailclient"
@@ -13,20 +15,21 @@ func TestInMemMailClient(t *testing.T) {
 	t.Parallel()
 
 	username := testkit.GenerateFakeEmail()
-	mailClient, err := mailclient.NewInMemMailClient(username, "pkg/mailclient")
-	require.NoError(t, err)
+	mailClient := mailclient.NewInMemMailClient(username)
 
 	mailCount := len(mailClient.MailLogs)
 
 	to := testkit.GenerateFakeEmail()
 	subject := testkit.MustGenerateRandomString(12, true, true, true)
-	textTemplate := "tmpl.txt"
-	htmlTemplate := "tmpl.html"
-	templateData := map[string]int{
+	textTmpl, err := texttemplate.New("textTmpl").Parse("Test Template Content: {{ .Value }}")
+	require.NoError(t, err)
+	htmlTmpl, err := htmltemplate.New("htmlTmpl").Parse("<div>Test Template Content: {{ .Value }}</div>")
+	require.NoError(t, err)
+	tmplData := map[string]int{
 		"Value": 42,
 	}
 
-	err = mailClient.Send([]string{to}, subject, textTemplate, htmlTemplate, templateData)
+	err = mailClient.Send([]string{to}, subject, textTmpl, htmlTmpl, tmplData)
 	require.NoError(t, err)
 
 	require.Len(t, mailClient.MailLogs, mailCount+1)

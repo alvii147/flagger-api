@@ -3,8 +3,9 @@ package mailclient
 import (
 	"bytes"
 	"fmt"
-	"html/template"
+	htmltemplate "html/template"
 	"strings"
+	texttemplate "text/template"
 	"time"
 
 	"github.com/google/uuid"
@@ -19,7 +20,13 @@ const (
 
 // MailClient is used to handle sending of emails.
 type MailClient interface {
-	Send(to []string, subject string, textTemplate string, htmlTemplate string, templateData any) error
+	Send(
+		to []string,
+		subject string,
+		textTmpl *texttemplate.Template,
+		htmlTmpl *htmltemplate.Template,
+		tmplData interface{},
+	) error
 }
 
 // BuildMail builds multi-line email body using MIME format.
@@ -27,10 +34,9 @@ func BuildMail(
 	from string,
 	to []string,
 	subject string,
-	textTemplate string,
-	htmlTemplate string,
-	templateData interface{},
-	templateGlob *template.Template,
+	textTmpl *texttemplate.Template,
+	htmlTmpl *htmltemplate.Template,
+	tmplData interface{},
 ) ([]byte, error) {
 	boundary := uuid.NewString()
 
@@ -50,9 +56,9 @@ func BuildMail(
 
 	mailBody.WriteString("\n")
 
-	err := templateGlob.ExecuteTemplate(&mailBody, textTemplate, templateData)
+	err := textTmpl.Execute(&mailBody, tmplData)
 	if err != nil {
-		return nil, fmt.Errorf("BuildMail failed to templateGlob.ExecuteTemplate %s: %w", textTemplate, err)
+		return nil, fmt.Errorf("BuildMail failed to textTmpl.Execute: %w", err)
 	}
 
 	mailBody.WriteString("\n")
@@ -63,9 +69,9 @@ func BuildMail(
 
 	mailBody.WriteString("\n")
 
-	err = templateGlob.ExecuteTemplate(&mailBody, htmlTemplate, templateData)
+	err = htmlTmpl.Execute(&mailBody, tmplData)
 	if err != nil {
-		return nil, fmt.Errorf("BuildMail failed to templateGlob.ExecuteTemplate %s: %w", htmlTemplate, err)
+		return nil, fmt.Errorf("BuildMail failed to htmlTmpl.Execute: %w", err)
 	}
 
 	mailBody.WriteString("\n")

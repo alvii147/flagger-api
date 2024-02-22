@@ -51,7 +51,6 @@ Variable | Default | Description | Required for Local Development?
 `FLAGGERAPI_SMTP_USERNAME` | `<empty>` | SMTP email username | **Only if `FLAGGERAPI_MAIL_CLIENT_TYPE` is `smtp`**
 `FLAGGERAPI_SMTP_PASSWORD` | `<empty>` | SMTP email password | **Only if `FLAGGERAPI_MAIL_CLIENT_TYPE` is `smtp`**
 `FLAGGERAPI_MAIL_CLIENT_TYPE` | `console` | Mail client type, must be one of `smtp`, `console`, or `inmem` |  No
-`FLAGGERAPI_MAIL_TEMPLATES_DIR` | `templates/email` | Directory to look for email templates | No
 
 ### :four: Run Server
 

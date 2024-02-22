@@ -10,6 +10,7 @@ import (
 
 	"github.com/alvii147/flagger-api/internal/auth"
 	"github.com/alvii147/flagger-api/internal/env"
+	"github.com/alvii147/flagger-api/internal/templatesmanager"
 	"github.com/alvii147/flagger-api/internal/testkitinternal"
 	"github.com/alvii147/flagger-api/pkg/api"
 	"github.com/alvii147/flagger-api/pkg/errutils"
@@ -26,14 +27,11 @@ import (
 func TestServiceCreateUserSuccess(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	email := testkit.GenerateFakeEmail()
 	password := testkit.GenerateFakePassword()
@@ -74,23 +72,20 @@ func TestServiceCreateUserSuccess(t *testing.T) {
 func TestServiceCreateUserEmailExists(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = false
 	})
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	mailCount := len(mailClient.MailLogs)
 
 	var wg sync.WaitGroup
-	_, err = svc.CreateUser(
+	_, err := svc.CreateUser(
 		context.Background(),
 		&wg,
 		user.Email,
@@ -114,11 +109,10 @@ func TestServiceActivateUserSuccess(t *testing.T) {
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
 	dbConn := testkitinternal.RequireCreateDatabaseConn(t, dbPool, context.Background())
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	now := time.Now().UTC()
 	jti := uuid.NewString()
@@ -154,11 +148,10 @@ func TestServiceActivateUserError(t *testing.T) {
 	config := env.GetConfig()
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	now := time.Now().UTC()
 	invalidToken := "ed0730889507fdb8549acfcd31548ee5"
@@ -221,18 +214,15 @@ func TestServiceActivateUserError(t *testing.T) {
 func TestServiceGetCurrentUserSuccess(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
 	})
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
 	currentUser, err := svc.GetCurrentUser(ctx)
@@ -249,14 +239,11 @@ func TestServiceGetCurrentUserSuccess(t *testing.T) {
 func TestServiceGetCurrentUserError(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	testcases := []struct {
 		name    string
@@ -299,11 +286,10 @@ func TestServiceCreateJWTSuccess(t *testing.T) {
 	})
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	accessToken, refreshToken, err := svc.CreateJWT(context.Background(), user.Email, password)
 	require.NoError(t, err)
@@ -340,18 +326,15 @@ func TestServiceCreateJWTSuccess(t *testing.T) {
 func TestServiceCreateJWTError(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
 	user, password := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
 	})
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	testcases := []struct {
 		name     string
@@ -390,11 +373,10 @@ func TestServiceRefreshJWTSuccess(t *testing.T) {
 	config := env.GetConfig()
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	userUUID := uuid.NewString()
 	_, refreshToken := testkitinternal.MustCreateUserAuthJWTs(userUUID)
@@ -423,11 +405,10 @@ func TestServiceRefreshJWTError(t *testing.T) {
 	config := env.GetConfig()
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	userUUID := uuid.NewString()
 	jti := uuid.NewString()
@@ -474,18 +455,15 @@ func TestServiceRefreshJWTError(t *testing.T) {
 func TestServiceCreateAPIKeySuccess(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
 	})
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
 	name := "My API Key"
@@ -515,8 +493,6 @@ func TestServiceCreateAPIKeySuccess(t *testing.T) {
 func TestServiceCreateAPIKeyAlreadyExists(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
 	})
@@ -526,25 +502,22 @@ func TestServiceCreateAPIKeyAlreadyExists(t *testing.T) {
 	})
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
 	name := "My API Key"
 	expiresAt := pgtype.Timestamp{
 		Valid: false,
 	}
-	_, _, err = svc.CreateAPIKey(ctx, name, expiresAt)
+	_, _, err := svc.CreateAPIKey(ctx, name, expiresAt)
 	require.ErrorIs(t, err, errutils.ErrAPIKeyAlreadyExists)
 }
 
 func TestServiceListAPIKeys(t *testing.T) {
 	t.Parallel()
-
-	config := env.GetConfig()
 
 	user1, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
@@ -585,11 +558,10 @@ func TestServiceListAPIKeys(t *testing.T) {
 	})
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user1.UUID)
 	fetchedUser1Keys, err := svc.ListAPIKeys(ctx)
@@ -630,8 +602,6 @@ func TestServiceListAPIKeys(t *testing.T) {
 func TestServiceFindAPIKeySuccess(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
 	})
@@ -639,11 +609,10 @@ func TestServiceFindAPIKeySuccess(t *testing.T) {
 	apiKey, rawKey := testkitinternal.MustCreateUserAPIKey(t, user.UUID, nil)
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	foundAPIKey, err := svc.FindAPIKey(context.Background(), rawKey)
 	require.NoError(t, err)
@@ -659,17 +628,14 @@ func TestServiceFindAPIKeySuccess(t *testing.T) {
 func TestServiceFindAPIKeyNotFound(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
 	_, rawKey, _, err := auth.CreateAPIKey()
 	require.NoError(t, err)
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	_, err = svc.FindAPIKey(context.Background(), rawKey)
 	require.ErrorIs(t, err, errutils.ErrAPIKeyNotFound)
@@ -677,8 +643,6 @@ func TestServiceFindAPIKeyNotFound(t *testing.T) {
 
 func TestServiceDeleteAPIKeySuccess(t *testing.T) {
 	t.Parallel()
-
-	config := env.GetConfig()
 
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
@@ -688,14 +652,13 @@ func TestServiceDeleteAPIKeySuccess(t *testing.T) {
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
 	dbConn := testkitinternal.RequireCreateDatabaseConn(t, dbPool, context.Background())
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
-	err = svc.DeleteAPIKey(ctx, apiKey.ID)
+	err := svc.DeleteAPIKey(ctx, apiKey.ID)
 	require.NoError(t, err)
 
 	apiKeys, err := repo.ListAPIKeysByUserUUID(dbConn, user.UUID)
@@ -706,20 +669,17 @@ func TestServiceDeleteAPIKeySuccess(t *testing.T) {
 func TestServiceDeleteAPIKeyNotFound(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
 	})
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, mailClient, repo)
+	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
 	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
-	err = svc.DeleteAPIKey(ctx, 42)
+	err := svc.DeleteAPIKey(ctx, 42)
 	require.ErrorIs(t, err, errutils.ErrAPIKeyNotFound)
 }

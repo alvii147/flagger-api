@@ -10,6 +10,7 @@ import (
 	"github.com/alvii147/flagger-api/internal/database"
 	"github.com/alvii147/flagger-api/internal/env"
 	"github.com/alvii147/flagger-api/internal/flags"
+	"github.com/alvii147/flagger-api/internal/templatesmanager"
 	"github.com/alvii147/flagger-api/pkg/logging"
 	"github.com/alvii147/flagger-api/pkg/mailclient"
 	"github.com/gorilla/mux"
@@ -27,6 +28,7 @@ type Controller interface {
 type controller struct {
 	dbPool       *pgxpool.Pool
 	mailClient   mailclient.MailClient
+	tmplManager  templatesmanager.Manager
 	authService  auth.Service
 	flagsService flags.Service
 }
@@ -43,27 +45,24 @@ func NewController() (Controller, error) {
 	var mailClient mailclient.MailClient
 	switch config.MailClientType {
 	case mailclient.MailClientTypeSMTP:
-		mailClient, err = mailclient.NewSMTPMailClient(
+		mailClient = mailclient.NewSMTPMailClient(
 			config.SMTPHostname,
 			config.SMTPPort,
 			config.SMTPUsername,
 			config.SMTPPassword,
-			config.MailTemplatesDir,
 		)
 	case mailclient.MailClientTypeInMemory:
-		mailClient, err = mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
+		mailClient = mailclient.NewInMemMailClient("support@flagger.com")
 	case mailclient.MailClientTypeConsole:
-		mailClient, err = mailclient.NewConsoleMailClient("support@flagger.com", os.Stdout, config.MailTemplatesDir)
+		mailClient = mailclient.NewConsoleMailClient("support@flagger.com", os.Stdout)
 	default:
 		return nil, fmt.Errorf("NewController failed, unknown mail client type %s", config.MailClientType)
 	}
 
-	if err != nil {
-		return nil, fmt.Errorf("NewController failed to mailclient.NewMailClient: %w", err)
-	}
+	tmplManager := templatesmanager.NewManager()
 
 	authRepository := auth.NewRepository()
-	authService := auth.NewService(dbPool, mailClient, authRepository)
+	authService := auth.NewService(dbPool, mailClient, tmplManager, authRepository)
 
 	flagsRepository := flags.NewRepository()
 	flagsService := flags.NewService(dbPool, flagsRepository)
@@ -71,6 +70,7 @@ func NewController() (Controller, error) {
 	ctrl := &controller{
 		dbPool:       dbPool,
 		mailClient:   mailClient,
+		tmplManager:  tmplManager,
 		authService:  authService,
 		flagsService: flagsService,
 	}

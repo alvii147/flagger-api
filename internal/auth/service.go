@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/alvii147/flagger-api/internal/templatesmanager"
 	"github.com/alvii147/flagger-api/pkg/errutils"
 	"github.com/alvii147/flagger-api/pkg/logging"
 	"github.com/alvii147/flagger-api/pkg/mailclient"
@@ -30,17 +31,24 @@ type Service interface {
 
 // service implements Service.
 type service struct {
-	dbPool     *pgxpool.Pool
-	mailClient mailclient.MailClient
-	repository Repository
+	dbPool      *pgxpool.Pool
+	mailClient  mailclient.MailClient
+	tmplManager templatesmanager.Manager
+	repository  Repository
 }
 
 // NewService returns a new Service.
-func NewService(dbPool *pgxpool.Pool, mailClient mailclient.MailClient, repo Repository) Service {
+func NewService(
+	dbPool *pgxpool.Pool,
+	mailClient mailclient.MailClient,
+	tmplManager templatesmanager.Manager,
+	repo Repository,
+) Service {
 	return &service{
-		dbPool:     dbPool,
-		mailClient: mailClient,
-		repository: repo,
+		dbPool:      dbPool,
+		mailClient:  mailClient,
+		tmplManager: tmplManager,
+		repository:  repo,
 	}
 }
 
@@ -91,7 +99,7 @@ func (svc *service) CreateUser(
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := sendActivationMail(user, svc.mailClient)
+		err := sendActivationMail(user, svc.mailClient, svc.tmplManager)
 		if err != nil {
 			logger.LogError("CreateUser failed to sendActivationMail:", err)
 		}

@@ -2,7 +2,9 @@ package mailclient_test
 
 import (
 	"bytes"
+	htmltemplate "html/template"
 	"testing"
+	texttemplate "text/template"
 
 	"github.com/alvii147/flagger-api/pkg/mailclient"
 	"github.com/alvii147/flagger-api/pkg/testkit"
@@ -15,18 +17,19 @@ func TestConsoleMailClient(t *testing.T) {
 	username := testkit.GenerateFakeEmail()
 	var buf bytes.Buffer
 
-	mailClient, err := mailclient.NewConsoleMailClient(username, &buf, ".")
-	require.NoError(t, err)
+	mailClient := mailclient.NewConsoleMailClient(username, &buf)
 
 	to := testkit.GenerateFakeEmail()
 	subject := testkit.MustGenerateRandomString(12, true, true, true)
-	textTemplate := "tmpl.txt"
-	htmlTemplate := "tmpl.html"
-	templateData := map[string]int{
+	textTmpl, err := texttemplate.New("textTmpl").Parse("Test Template Content: {{ .Value }}")
+	require.NoError(t, err)
+	htmlTmpl, err := htmltemplate.New("htmlTmpl").Parse("<div>Test Template Content: {{ .Value }}</div>")
+	require.NoError(t, err)
+	tmplData := map[string]int{
 		"Value": 42,
 	}
 
-	err = mailClient.Send([]string{to}, subject, textTemplate, htmlTemplate, templateData)
+	err = mailClient.Send([]string{to}, subject, textTmpl, htmlTmpl, tmplData)
 	require.NoError(t, err)
 
 	textMsg, htmlMsg := testkit.MustParseMailMessage(buf.String())

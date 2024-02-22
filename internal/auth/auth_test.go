@@ -8,6 +8,7 @@ import (
 
 	"github.com/alvii147/flagger-api/internal/auth"
 	"github.com/alvii147/flagger-api/internal/env"
+	"github.com/alvii147/flagger-api/internal/templatesmanager"
 	"github.com/alvii147/flagger-api/internal/testkitinternal"
 	"github.com/alvii147/flagger-api/pkg/api"
 	"github.com/alvii147/flagger-api/pkg/mailclient"
@@ -331,8 +332,6 @@ func TestValidateActivationJWT(t *testing.T) {
 func TestSendActivationMail(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
 	user := &auth.User{
 		UUID:        uuid.NewString(),
 		Email:       testkit.GenerateFakeEmail(),
@@ -343,11 +342,10 @@ func TestSendActivationMail(t *testing.T) {
 		IsSuperUser: false,
 	}
 
-	mailClient, err := mailclient.NewInMemMailClient("support@flagger.com", config.MailTemplatesDir)
-	require.NoError(t, err)
-
+	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
 	mailCount := len(mailClient.MailLogs)
-	err = auth.SendActivationMail(user, mailClient)
+	tmplManager := templatesmanager.NewManager()
+	err := auth.SendActivationMail(user, mailClient, tmplManager)
 	require.NoError(t, err)
 	require.Len(t, mailClient.MailLogs, mailCount+1)
 
