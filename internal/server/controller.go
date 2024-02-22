@@ -17,14 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// Controller handles server API operations.
-type Controller interface {
-	Route() *mux.Router
-	Serve(router *mux.Router) error
-	Close() error
-}
-
-// controller implements Controller.
+// controller handles server API operations.
 type controller struct {
 	dbPool       *pgxpool.Pool
 	mailClient   mailclient.MailClient
@@ -33,8 +26,8 @@ type controller struct {
 	flagsService flags.Service
 }
 
-// NewController sets up the server and returns a new Controller.
-func NewController() (Controller, error) {
+// NewController sets up the server and returns a new controller.
+func NewController() (*controller, error) {
 	config := env.GetConfig()
 
 	dbPool, err := database.CreatePool()

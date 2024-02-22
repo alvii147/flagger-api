@@ -37,13 +37,13 @@ type service struct {
 	repository  Repository
 }
 
-// NewService returns a new Service.
+// NewService returns a new service.
 func NewService(
 	dbPool *pgxpool.Pool,
 	mailClient mailclient.MailClient,
 	tmplManager templatesmanager.Manager,
 	repo Repository,
-) Service {
+) *service {
 	return &service{
 		dbPool:      dbPool,
 		mailClient:  mailClient,

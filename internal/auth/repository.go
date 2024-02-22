@@ -27,8 +27,8 @@ type Repository interface {
 // repository implements Repository.
 type repository struct{}
 
-// NewRepository returns a new Repository.
-func NewRepository() Repository {
+// NewRepository returns a new repository.
+func NewRepository() *repository {
 	return &repository{}
 }
 

@@ -25,8 +25,8 @@ type service struct {
 	repository Repository
 }
 
-// NewService returns a new Service.
-func NewService(dbPool *pgxpool.Pool, repo Repository) Service {
+// NewService returns a new service.
+func NewService(dbPool *pgxpool.Pool, repo Repository) *service {
 	return &service{
 		dbPool:     dbPool,
 		repository: repo,

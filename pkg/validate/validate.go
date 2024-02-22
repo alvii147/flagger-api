@@ -16,6 +16,13 @@ type Validator struct {
 	failures map[string][]string
 }
 
+// NewValidator creates and returns a new Validator.
+func NewValidator() *Validator {
+	return &Validator{
+		failures: make(map[string][]string),
+	}
+}
+
 // addFailure records a validation failure.
 func (v *Validator) addFailure(field string, format string, args ...any) {
 	v.failures[field] = append(v.failures[field], fmt.Sprintf(format, args...))
@@ -64,12 +71,5 @@ func (v *Validator) ValidateStringEmail(field string, email string) {
 func (v *Validator) ValidateStringSlug(field string, value string) {
 	if !reSlug.MatchString(value) {
 		v.addFailure(field, "\"%s\" must be a slug", field)
-	}
-}
-
-// NewValidator creates and returns a new Validator.
-func NewValidator() *Validator {
-	return &Validator{
-		failures: make(map[string][]string),
 	}
 }

@@ -36,7 +36,7 @@ func SetLogger(newLogger Logger) {
 }
 
 // NewLogger returns a new Logger.
-func NewLogger(stdout io.Writer, stderr io.Writer) Logger {
+func NewLogger(stdout io.Writer, stderr io.Writer) *logger {
 	return &logger{
 		debugLogger: log.New(stdout, "[D] ", log.Ldate|log.Ltime|log.LUTC),
 		infoLogger:  log.New(stdout, "[I] ", log.Ldate|log.Ltime|log.LUTC),
