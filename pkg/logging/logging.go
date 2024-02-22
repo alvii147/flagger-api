@@ -35,18 +35,6 @@ type logger struct {
 	errorLogger *log.Logger
 }
 
-var l Logger
-
-// GetLogger gets the currently set Logger.
-func GetLogger() Logger {
-	return l
-}
-
-// SetLogger sets the current Logger.
-func SetLogger(newLogger Logger) {
-	l = newLogger
-}
-
 // NewLogger returns a new Logger.
 func NewLogger(stdout io.Writer, stderr io.Writer) *logger {
 	return &logger{

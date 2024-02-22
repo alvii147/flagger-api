@@ -20,6 +20,7 @@ import (
 // controller handles server API operations.
 type controller struct {
 	dbPool       *pgxpool.Pool
+	logger       logging.Logger
 	mailClient   mailclient.Client
 	tmplManager  templatesmanager.Manager
 	authService  auth.Service
@@ -34,6 +35,8 @@ func NewController() (*controller, error) {
 	if err != nil {
 		return nil, fmt.Errorf("NewController failed to database.GetPool: %w", err)
 	}
+
+	logger := logging.NewLogger(os.Stdout, os.Stderr)
 
 	var mailClient mailclient.Client
 	switch config.MailClientType {
@@ -55,13 +58,14 @@ func NewController() (*controller, error) {
 	tmplManager := templatesmanager.NewManager()
 
 	authRepository := auth.NewRepository()
-	authService := auth.NewService(dbPool, mailClient, tmplManager, authRepository)
+	authService := auth.NewService(dbPool, logger, mailClient, tmplManager, authRepository)
 
 	flagsRepository := flags.NewRepository()
 	flagsService := flags.NewService(dbPool, flagsRepository)
 
 	ctrl := &controller{
 		dbPool:       dbPool,
+		logger:       logger,
 		mailClient:   mailClient,
 		tmplManager:  tmplManager,
 		authService:  authService,
@@ -74,10 +78,9 @@ func NewController() (*controller, error) {
 // Serve runs the Controller server.
 func (ctrl *controller) Serve(router *mux.Router) error {
 	config := env.GetConfig()
-	logger := logging.GetLogger()
 
 	addr := fmt.Sprintf("%s:%d", config.Hostname, config.Port)
-	logger.LogInfo("Server running on", addr)
+	ctrl.logger.LogInfo("Server running on", addr)
 	err := http.ListenAndServe(addr, router)
 	if err != nil {
 		return fmt.Errorf("Serve failed to http.ListenAndServe %s: %w", addr, err)

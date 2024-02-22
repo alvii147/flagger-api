@@ -10,7 +10,6 @@ import (
 	"github.com/alvii147/flagger-api/pkg/api"
 	"github.com/alvii147/flagger-api/pkg/errutils"
 	"github.com/alvii147/flagger-api/pkg/httputils"
-	"github.com/alvii147/flagger-api/pkg/logging"
 	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -47,12 +46,10 @@ func getFlagNameParam(vars map[string]string) (string, error) {
 // Methods: POST
 // URL: /flags
 func (ctrl *controller) HandleCreateFlag(w *httputils.ResponseWriter, r *http.Request) {
-	logger := logging.GetLogger()
-
 	var req api.CreateFlagRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		logger.LogWarn("HandleCreateFlag failed to Decode:", err)
+		ctrl.logger.LogWarn("HandleCreateFlag failed to Decode:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInvalidRequest,
@@ -65,7 +62,7 @@ func (ctrl *controller) HandleCreateFlag(w *httputils.ResponseWriter, r *http.Re
 
 	validationPassed, validationFailures := req.Validate()
 	if !validationPassed {
-		logger.LogWarn("HandleCreateFlag failed to Validate:", validationFailures)
+		ctrl.logger.LogWarn("HandleCreateFlag failed to Validate:", validationFailures)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:               api.ErrCodeInvalidRequest,
@@ -79,7 +76,7 @@ func (ctrl *controller) HandleCreateFlag(w *httputils.ResponseWriter, r *http.Re
 
 	flag, err := ctrl.flagsService.CreateFlag(r.Context(), string(req.Name))
 	if err != nil {
-		logger.LogWarn("HandleCreateFlag failed to ctrl.flagsService.CreateFlag:", err)
+		ctrl.logger.LogWarn("HandleCreateFlag failed to ctrl.flagsService.CreateFlag:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInternalServerError,
@@ -106,8 +103,6 @@ func (ctrl *controller) HandleCreateFlag(w *httputils.ResponseWriter, r *http.Re
 // Methods: GET
 // URL: /flags/{id}
 func (ctrl *controller) HandleGetFlagByID(w *httputils.ResponseWriter, r *http.Request) {
-	logger := logging.GetLogger()
-
 	flagID, err := getFlagIDParam(mux.Vars(r))
 	if err != nil {
 		w.WriteJSON(
@@ -122,7 +117,7 @@ func (ctrl *controller) HandleGetFlagByID(w *httputils.ResponseWriter, r *http.R
 
 	flag, err := ctrl.flagsService.GetFlagByID(r.Context(), flagID)
 	if err != nil {
-		logger.LogError("HandleGetFlagByID failed to ctrl.flagsService.GetFlagByID:", err)
+		ctrl.logger.LogError("HandleGetFlagByID failed to ctrl.flagsService.GetFlagByID:", err)
 		switch {
 		case errors.Is(err, errutils.ErrFlagNotFound):
 			w.WriteJSON(
@@ -160,8 +155,6 @@ func (ctrl *controller) HandleGetFlagByID(w *httputils.ResponseWriter, r *http.R
 // Methods: GET
 // URL: /api/flags/{name}
 func (ctrl *controller) HandleGetFlagByName(w *httputils.ResponseWriter, r *http.Request) {
-	logger := logging.GetLogger()
-
 	flagName, err := getFlagNameParam(mux.Vars(r))
 	if err != nil {
 		w.WriteJSON(
@@ -176,7 +169,7 @@ func (ctrl *controller) HandleGetFlagByName(w *httputils.ResponseWriter, r *http
 
 	flag, err := ctrl.flagsService.GetFlagByName(r.Context(), flagName)
 	if err != nil {
-		logger.LogError("HandleGetFlagByName failed to ctrl.flagsService.GetFlagByName:", err)
+		ctrl.logger.LogError("HandleGetFlagByName failed to ctrl.flagsService.GetFlagByName:", err)
 		switch {
 		case errors.Is(err, errutils.ErrFlagNotFound):
 			resp := &api.GetFlagByNameResponse{
@@ -229,11 +222,9 @@ func (ctrl *controller) HandleGetFlagByName(w *httputils.ResponseWriter, r *http
 // Methods: GET
 // URL: /flags
 func (ctrl *controller) HandleListFlags(w *httputils.ResponseWriter, r *http.Request) {
-	logger := logging.GetLogger()
-
 	flags, err := ctrl.flagsService.ListFlags(r.Context())
 	if err != nil {
-		logger.LogWarn("HandleListFlags failed to ctrl.flagsService.ListFlags:", err)
+		ctrl.logger.LogWarn("HandleListFlags failed to ctrl.flagsService.ListFlags:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInternalServerError,
@@ -266,8 +257,6 @@ func (ctrl *controller) HandleListFlags(w *httputils.ResponseWriter, r *http.Req
 // Methods: PUT
 // URL: /flags/{id}
 func (ctrl *controller) HandleUpdateFlag(w *httputils.ResponseWriter, r *http.Request) {
-	logger := logging.GetLogger()
-
 	flagID, err := getFlagIDParam(mux.Vars(r))
 	if err != nil {
 		w.WriteJSON(
@@ -283,7 +272,7 @@ func (ctrl *controller) HandleUpdateFlag(w *httputils.ResponseWriter, r *http.Re
 	var req api.UpdateFlagRequest
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		logger.LogWarn("HandleUpdateFlag failed to Decode:", err)
+		ctrl.logger.LogWarn("HandleUpdateFlag failed to Decode:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInvalidRequest,
@@ -296,7 +285,7 @@ func (ctrl *controller) HandleUpdateFlag(w *httputils.ResponseWriter, r *http.Re
 
 	validationPassed, validationFailures := req.Validate()
 	if !validationPassed {
-		logger.LogWarn("HandleUpdateFlag failed to Validate:", validationFailures)
+		ctrl.logger.LogWarn("HandleUpdateFlag failed to Validate:", validationFailures)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:               api.ErrCodeInvalidRequest,
@@ -310,7 +299,7 @@ func (ctrl *controller) HandleUpdateFlag(w *httputils.ResponseWriter, r *http.Re
 
 	flag, err := ctrl.flagsService.UpdateFlag(r.Context(), flagID, string(req.Name), req.IsEnabled)
 	if err != nil {
-		logger.LogError("HandleUpdateFlag failed to ctrl.flagsService.UpdateFlag:", err)
+		ctrl.logger.LogError("HandleUpdateFlag failed to ctrl.flagsService.UpdateFlag:", err)
 		switch {
 		case errors.Is(err, errutils.ErrFlagNotFound):
 			w.WriteJSON(

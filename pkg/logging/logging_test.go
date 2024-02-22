@@ -1,12 +1,10 @@
 package logging_test
 
 import (
-	"bytes"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/alvii147/flagger-api/pkg/logging"
 	"github.com/alvii147/flagger-api/pkg/testkit"
 	"github.com/stretchr/testify/require"
 )
@@ -14,19 +12,17 @@ import (
 func TestLogger(t *testing.T) {
 	t.Parallel()
 
-	var bufOut bytes.Buffer
-	var bufErr bytes.Buffer
-	mockLogger := logging.NewLogger(&bufOut, &bufErr)
+	bufOut, bufErr, logger := testkit.CreateTestLogger()
 
 	debugMessage := "Debug message"
 	infoMessage := "Info message"
 	warnMessage := "Warn message"
 	errorMessage := "Error message"
 
-	mockLogger.LogDebug(debugMessage)
-	mockLogger.LogInfo(infoMessage)
-	mockLogger.LogWarn(warnMessage)
-	mockLogger.LogError(errorMessage)
+	logger.LogDebug(debugMessage)
+	logger.LogInfo(infoMessage)
+	logger.LogWarn(warnMessage)
+	logger.LogError(errorMessage)
 
 	stdoutMessages := strings.Split(strings.TrimSpace(bufOut.String()), "\n")
 	stderrMessages := strings.Split(strings.TrimSpace(bufErr.String()), "\n")

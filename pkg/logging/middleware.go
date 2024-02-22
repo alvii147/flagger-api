@@ -7,23 +7,21 @@ import (
 )
 
 // logTraffic logs HTTP traffic, including http method, URL, protocol, and status code.
-func logTraffic(w *httputils.ResponseWriter, request *http.Request) {
-	l := GetLogger()
-
+func logTraffic(logger Logger, w *httputils.ResponseWriter, request *http.Request) {
 	if w.StatusCode < 400 {
-		l.LogInfo(request.Method, request.URL, request.Proto, w.StatusCode, http.StatusText(w.StatusCode))
+		logger.LogInfo(request.Method, request.URL, request.Proto, w.StatusCode, http.StatusText(w.StatusCode))
 	} else if w.StatusCode < 500 {
-		l.LogWarn(request.Method, request.URL, request.Proto, w.StatusCode, http.StatusText(w.StatusCode))
+		logger.LogWarn(request.Method, request.URL, request.Proto, w.StatusCode, http.StatusText(w.StatusCode))
 	} else {
-		l.LogError(request.Method, request.URL, request.Proto, w.StatusCode, http.StatusText(w.StatusCode))
+		logger.LogError(request.Method, request.URL, request.Proto, w.StatusCode, http.StatusText(w.StatusCode))
 	}
 }
 
 // LoggerMiddleware handles logging of HTTP traffic.
-func LoggerMiddleware(next httputils.HandlerFunc) httputils.HandlerFunc {
+func LoggerMiddleware(next httputils.HandlerFunc, logger Logger) httputils.HandlerFunc {
 	return httputils.HandlerFunc(func(w *httputils.ResponseWriter, r *http.Request) {
 		defer func() {
-			logTraffic(w, r)
+			logTraffic(logger, w, r)
 		}()
 
 		next.ServeHTTP(w, r)

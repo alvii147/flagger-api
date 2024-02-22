@@ -18,6 +18,7 @@ func (ctrl *controller) Route() *mux.Router {
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				ctrl.HandleCreateUser,
+				ctrl.logger,
 			),
 		),
 	).Methods(http.MethodPost)
@@ -29,6 +30,7 @@ func (ctrl *controller) Route() *mux.Router {
 				auth.JWTAuthMiddleware(
 					ctrl.HandleGetUserMe,
 				),
+				ctrl.logger,
 			),
 		),
 	).Methods(http.MethodGet)
@@ -41,6 +43,7 @@ func (ctrl *controller) Route() *mux.Router {
 					ctrl.HandleGetUserMe,
 					ctrl.authService,
 				),
+				ctrl.logger,
 			),
 		),
 	).Methods(http.MethodGet)
@@ -50,6 +53,7 @@ func (ctrl *controller) Route() *mux.Router {
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				ctrl.HandleActivateUser,
+				ctrl.logger,
 			),
 		),
 	).Methods(http.MethodPost)
@@ -59,6 +63,7 @@ func (ctrl *controller) Route() *mux.Router {
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				ctrl.HandleCreateJWT,
+				ctrl.logger,
 			),
 		),
 	).Methods(http.MethodPost)
@@ -68,6 +73,7 @@ func (ctrl *controller) Route() *mux.Router {
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				ctrl.HandleRefreshJWT,
+				ctrl.logger,
 			),
 		),
 	).Methods(http.MethodPost)
@@ -79,6 +85,7 @@ func (ctrl *controller) Route() *mux.Router {
 				auth.JWTAuthMiddleware(
 					ctrl.HandleCreateAPIKey,
 				),
+				ctrl.logger,
 			),
 		),
 	).Methods(http.MethodPost)
@@ -90,6 +97,7 @@ func (ctrl *controller) Route() *mux.Router {
 				auth.JWTAuthMiddleware(
 					ctrl.HandleListAPIKeys,
 				),
+				ctrl.logger,
 			),
 		),
 	).Methods(http.MethodGet)
@@ -101,6 +109,7 @@ func (ctrl *controller) Route() *mux.Router {
 				auth.JWTAuthMiddleware(
 					ctrl.HandleDeleteAPIKey,
 				),
+				ctrl.logger,
 			),
 		),
 	).Methods(http.MethodDelete)
@@ -112,6 +121,7 @@ func (ctrl *controller) Route() *mux.Router {
 				auth.JWTAuthMiddleware(
 					ctrl.HandleListFlags,
 				),
+				ctrl.logger,
 			),
 		),
 	).Methods(http.MethodGet)
@@ -123,6 +133,7 @@ func (ctrl *controller) Route() *mux.Router {
 				auth.JWTAuthMiddleware(
 					ctrl.HandleCreateFlag,
 				),
+				ctrl.logger,
 			),
 		),
 	).Methods(http.MethodPost)
@@ -134,6 +145,7 @@ func (ctrl *controller) Route() *mux.Router {
 				auth.JWTAuthMiddleware(
 					ctrl.HandleGetFlagByID,
 				),
+				ctrl.logger,
 			),
 		),
 	).Methods(http.MethodGet)
@@ -146,6 +158,7 @@ func (ctrl *controller) Route() *mux.Router {
 					ctrl.HandleGetFlagByName,
 					ctrl.authService,
 				),
+				ctrl.logger,
 			),
 		),
 	).Methods(http.MethodGet)
@@ -157,6 +170,7 @@ func (ctrl *controller) Route() *mux.Router {
 				auth.JWTAuthMiddleware(
 					ctrl.HandleUpdateFlag,
 				),
+				ctrl.logger,
 			),
 		),
 	).Methods(http.MethodPut)

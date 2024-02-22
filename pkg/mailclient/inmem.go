@@ -20,6 +20,7 @@ type logEntry struct {
 // This should typically be used in unit tests.
 type inMemClient struct {
 	username string
+	sendErr  error
 	Logs     []logEntry
 }
 
@@ -27,7 +28,13 @@ type inMemClient struct {
 func NewInMemClient(username string) *inMemClient {
 	return &inMemClient{
 		username: username,
+		sendErr:  nil,
+		Logs:     make([]logEntry, 0),
 	}
+}
+
+func (immc *inMemClient) SetSendError(err error) {
+	immc.sendErr = err
 }
 
 // Send adds an email event to in-memory storage.
@@ -38,6 +45,10 @@ func (immc *inMemClient) Send(
 	htmlTmpl *htmltemplate.Template,
 	tmplData interface{},
 ) error {
+	if immc.sendErr != nil {
+		return immc.sendErr
+	}
+
 	msg, err := BuildMail(immc.username, to, subject, textTmpl, htmlTmpl, tmplData)
 	if err != nil {
 		return fmt.Errorf("Send failed to BuildMail: %w", err)

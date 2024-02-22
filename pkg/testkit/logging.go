@@ -1,9 +1,12 @@
 package testkit
 
 import (
+	"bytes"
 	"fmt"
 	"regexp"
 	"time"
+
+	"github.com/alvii147/flagger-api/pkg/logging"
 )
 
 func MustParseLogMessage(msg string) (string, time.Time, string, string) {
@@ -24,4 +27,12 @@ func MustParseLogMessage(msg string) (string, time.Time, string, string) {
 	logMsg := matches[4]
 
 	return logLevel, logTime, logFile, logMsg
+}
+
+func CreateTestLogger() (*bytes.Buffer, *bytes.Buffer, logging.Logger) {
+	var bufOut bytes.Buffer
+	var bufErr bytes.Buffer
+	logger := logging.NewLogger(&bufOut, &bufErr)
+
+	return &bufOut, &bufErr, logger
 }

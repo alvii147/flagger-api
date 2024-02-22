@@ -32,6 +32,7 @@ type Service interface {
 // service implements Service.
 type service struct {
 	dbPool      *pgxpool.Pool
+	logger      logging.Logger
 	mailClient  mailclient.Client
 	tmplManager templatesmanager.Manager
 	repository  Repository
@@ -40,12 +41,14 @@ type service struct {
 // NewService returns a new service.
 func NewService(
 	dbPool *pgxpool.Pool,
+	logger logging.Logger,
 	mailClient mailclient.Client,
 	tmplManager templatesmanager.Manager,
 	repo Repository,
 ) *service {
 	return &service{
 		dbPool:      dbPool,
+		logger:      logger,
 		mailClient:  mailClient,
 		tmplManager: tmplManager,
 		repository:  repo,
@@ -61,8 +64,6 @@ func (svc *service) CreateUser(
 	firstName string,
 	lastName string,
 ) (*User, error) {
-	logger := logging.GetLogger()
-
 	hashedPasswordBytes, err := hashPassword(password)
 	if err != nil {
 		return nil, fmt.Errorf("CreateUser failed to hashPassword: %w", err)
@@ -101,7 +102,7 @@ func (svc *service) CreateUser(
 		defer wg.Done()
 		err := sendActivationMail(user, svc.mailClient, svc.tmplManager)
 		if err != nil {
-			logger.LogError("CreateUser failed to sendActivationMail:", err)
+			svc.logger.LogError("CreateUser failed to sendActivationMail:", err)
 		}
 	}()
 

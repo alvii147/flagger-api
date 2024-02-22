@@ -1,7 +1,6 @@
 package logging_test
 
 import (
-	"bytes"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -16,10 +15,7 @@ import (
 )
 
 func TestLogTraffic(t *testing.T) {
-	defaultLogger := logging.GetLogger()
-	t.Cleanup(func() {
-		logging.SetLogger(defaultLogger)
-	})
+	t.Parallel()
 
 	testcases := []struct {
 		name       string
@@ -89,10 +85,7 @@ func TestLogTraffic(t *testing.T) {
 	for _, testcase := range testcases {
 		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
-			var bufOut bytes.Buffer
-			var bufErr bytes.Buffer
-			mockLogger := logging.NewLogger(&bufOut, &bufErr)
-			logging.SetLogger(mockLogger)
+			bufOut, bufErr, logger := testkit.CreateTestLogger()
 
 			url := "/request/url/path"
 			rec := httptest.NewRecorder()
@@ -102,7 +95,7 @@ func TestLogTraffic(t *testing.T) {
 			}
 			r := httptest.NewRequest(testcase.method, url, http.NoBody)
 
-			logging.LogTraffic(w, r)
+			logging.LogTraffic(logger, w, r)
 
 			stdoutMessages := strings.Split(strings.TrimSpace(bufOut.String()), "\n")
 			stderrMessages := strings.Split(strings.TrimSpace(bufErr.String()), "\n")
@@ -134,10 +127,7 @@ func TestLogTraffic(t *testing.T) {
 }
 
 func TestLoggerMiddleware(t *testing.T) {
-	defaultLogger := logging.GetLogger()
-	t.Cleanup(func() {
-		logging.SetLogger(defaultLogger)
-	})
+	t.Parallel()
 
 	testcases := []struct {
 		name       string
@@ -212,10 +202,7 @@ func TestLoggerMiddleware(t *testing.T) {
 				nextCallCount++
 			}
 
-			var bufOut bytes.Buffer
-			var bufErr bytes.Buffer
-			mockLogger := logging.NewLogger(&bufOut, &bufErr)
-			logging.SetLogger(mockLogger)
+			bufOut, bufErr, logger := testkit.CreateTestLogger()
 
 			url := "/request/url/path"
 			rec := httptest.NewRecorder()
@@ -225,7 +212,7 @@ func TestLoggerMiddleware(t *testing.T) {
 			}
 			r := httptest.NewRequest(testcase.method, url, http.NoBody)
 
-			logging.LoggerMiddleware(next)(w, r)
+			logging.LoggerMiddleware(next, logger)(w, r)
 			require.Equal(t, 1, nextCallCount)
 
 			stdoutMessages := strings.Split(strings.TrimSpace(bufOut.String()), "\n")

@@ -8,15 +8,11 @@ import (
 
 	"github.com/alvii147/flagger-api/internal/env"
 	"github.com/alvii147/flagger-api/internal/server"
-	"github.com/alvii147/flagger-api/pkg/logging"
 )
 
 func main() {
 	config := env.NewConfig()
 	env.SetConfig(config)
-
-	logger := logging.NewLogger(os.Stdout, os.Stderr)
-	logging.SetLogger(logger)
 
 	ctrl, err := server.NewController()
 	if err != nil {
