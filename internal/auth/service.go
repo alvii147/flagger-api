@@ -137,7 +137,7 @@ func (svc *service) ActivateUser(ctx context.Context, token string) error {
 
 // GetCurrentUser gets currently authenticated User.
 func (svc *service) GetCurrentUser(ctx context.Context) (*User, error) {
-	userUUID, ok := ctx.Value(UserUUIDContextKey).(string)
+	userUUID, ok := ctx.Value(AuthContextKeyUserUUID).(string)
 	if !ok {
 		return nil, errors.New("GetCurrentUser failed to ctx.Value user UUID from ctx")
 	}
@@ -229,7 +229,7 @@ func (svc *service) RefreshJWT(ctx context.Context, token string) (string, error
 
 // CreateAPIKey creates new API key for User.
 func (svc *service) CreateAPIKey(ctx context.Context, name string, expiresAt pgtype.Timestamp) (*APIKey, string, error) {
-	userUUID, ok := ctx.Value(UserUUIDContextKey).(string)
+	userUUID, ok := ctx.Value(AuthContextKeyUserUUID).(string)
 	if !ok {
 		return nil, "", errors.New("CreateAPIKey failed to ctx.Value user UUID from ctx")
 	}
@@ -269,7 +269,7 @@ func (svc *service) CreateAPIKey(ctx context.Context, name string, expiresAt pgt
 
 // ListAPIKeys retrieves API keys for currently authenticated User.
 func (svc *service) ListAPIKeys(ctx context.Context) ([]*APIKey, error) {
-	userUUID, ok := ctx.Value(UserUUIDContextKey).(string)
+	userUUID, ok := ctx.Value(AuthContextKeyUserUUID).(string)
 	if !ok {
 		return nil, errors.New("ListAPIKeys failed to ctx.Value user UUID from ctx")
 	}
@@ -319,7 +319,7 @@ func (svc *service) FindAPIKey(ctx context.Context, rawKey string) (*APIKey, err
 
 // DeleteAPIKey deletes API key for currently authenticated User.
 func (svc *service) DeleteAPIKey(ctx context.Context, apiKeyID int) error {
-	userUUID, ok := ctx.Value(UserUUIDContextKey).(string)
+	userUUID, ok := ctx.Value(AuthContextKeyUserUUID).(string)
 	if !ok {
 		return errors.New("DeleteAPIKey failed to ctx.Value user UUID from ctx")
 	}

@@ -51,6 +51,12 @@ const (
 	JWTTypeActivation JWTType = "activation"
 )
 
+// AuthContextKey is a string representing context keys.
+type AuthContextKey string
+
+// AuthContextKeyUserUUID is the key in context where User UUID is stored after authentication.
+const AuthContextKeyUserUUID AuthContextKey = "userUUID"
+
 // hashPassword hashes given password.
 func hashPassword(password string) (string, error) {
 	config := env.GetConfig()

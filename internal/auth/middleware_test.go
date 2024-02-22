@@ -155,7 +155,7 @@ func TestJWTAuthMiddleware(t *testing.T) {
 
 			nextCallCount := 0
 			var next httputils.HandlerFunc = func(w *httputils.ResponseWriter, r *http.Request) {
-				require.Equal(t, userUUID, r.Context().Value(auth.UserUUIDContextKey))
+				require.Equal(t, userUUID, r.Context().Value(auth.AuthContextKeyUserUUID))
 				w.WriteJSON(validResponse, validStatusCode)
 				nextCallCount++
 			}
@@ -282,7 +282,7 @@ func TestAPIKeyAuthMiddleware(t *testing.T) {
 
 			nextCallCount := 0
 			var next httputils.HandlerFunc = func(w *httputils.ResponseWriter, r *http.Request) {
-				require.Equal(t, user.UUID, r.Context().Value(auth.UserUUIDContextKey))
+				require.Equal(t, user.UUID, r.Context().Value(auth.AuthContextKeyUserUUID))
 				w.WriteJSON(validResponse, validStatusCode)
 				nextCallCount++
 			}

@@ -35,7 +35,7 @@ func NewService(dbPool *pgxpool.Pool, repo Repository) Service {
 
 // CreateFlag creates new Flag for User.
 func (svc *service) CreateFlag(ctx context.Context, name string) (*Flag, error) {
-	userUUID, ok := ctx.Value(auth.UserUUIDContextKey).(string)
+	userUUID, ok := ctx.Value(auth.AuthContextKeyUserUUID).(string)
 	if !ok {
 		return nil, errors.New("CreateFlag failed to ctx.Value user UUID from ctx")
 	}
@@ -67,7 +67,7 @@ func (svc *service) CreateFlag(ctx context.Context, name string) (*Flag, error) 
 
 // GetFlagByID retrieves Flag by ID for currently authenticated User.
 func (svc *service) GetFlagByID(ctx context.Context, flagID int) (*Flag, error) {
-	userUUID, ok := ctx.Value(auth.UserUUIDContextKey).(string)
+	userUUID, ok := ctx.Value(auth.AuthContextKeyUserUUID).(string)
 	if !ok {
 		return nil, errors.New("GetFlagByID failed to ctx.Value user UUID from ctx")
 	}
@@ -94,7 +94,7 @@ func (svc *service) GetFlagByID(ctx context.Context, flagID int) (*Flag, error) 
 
 // GetFlagByName retrieves Flag by name for currently authenticated User.
 func (svc *service) GetFlagByName(ctx context.Context, name string) (*Flag, error) {
-	userUUID, ok := ctx.Value(auth.UserUUIDContextKey).(string)
+	userUUID, ok := ctx.Value(auth.AuthContextKeyUserUUID).(string)
 	if !ok {
 		return nil, errors.New("GetFlagByName failed to ctx.Value user UUID from ctx")
 	}
@@ -121,7 +121,7 @@ func (svc *service) GetFlagByName(ctx context.Context, name string) (*Flag, erro
 
 // ListFlags retrieves Flags for currently authenticated User.
 func (svc *service) ListFlags(ctx context.Context) ([]*Flag, error) {
-	userUUID, ok := ctx.Value(auth.UserUUIDContextKey).(string)
+	userUUID, ok := ctx.Value(auth.AuthContextKeyUserUUID).(string)
 	if !ok {
 		return nil, errors.New("ListFlags failed to ctx.Value user UUID from ctx")
 	}
@@ -142,7 +142,7 @@ func (svc *service) ListFlags(ctx context.Context) ([]*Flag, error) {
 
 // UpdateFlag updates Flag by ID for currently authenticated User.
 func (svc *service) UpdateFlag(ctx context.Context, flagID int, name string, isEnabled bool) (*Flag, error) {
-	userUUID, ok := ctx.Value(auth.UserUUIDContextKey).(string)
+	userUUID, ok := ctx.Value(auth.AuthContextKeyUserUUID).(string)
 	if !ok {
 		return nil, errors.New("UpdateFlag failed to ctx.Value user UUID from ctx")
 	}

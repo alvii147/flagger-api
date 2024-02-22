@@ -25,7 +25,7 @@ func TestServiceCreateFlagSuccess(t *testing.T) {
 	repo := flags.NewRepository()
 	svc := flags.NewService(dbPool, repo)
 
-	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
+	ctx := context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user.UUID)
 	name := "my-flag"
 	now := time.Now().UTC()
 	flag, err := svc.CreateFlag(ctx, name)
@@ -52,7 +52,7 @@ func TestServiceCreateFlagAlreadyExists(t *testing.T) {
 	repo := flags.NewRepository()
 	svc := flags.NewService(dbPool, repo)
 
-	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
+	ctx := context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user.UUID)
 	_, err := svc.CreateFlag(ctx, name)
 	require.ErrorIs(t, err, errutils.ErrFlagAlreadyExists)
 }
@@ -70,7 +70,7 @@ func TestServiceGetFlagByIDSuccess(t *testing.T) {
 	repo := flags.NewRepository()
 	svc := flags.NewService(dbPool, repo)
 
-	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
+	ctx := context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user.UUID)
 	fetchedFlag, err := svc.GetFlagByID(ctx, flag.ID)
 	require.NoError(t, err)
 
@@ -113,19 +113,19 @@ func TestServiceGetFlagByIDError(t *testing.T) {
 		{
 			name:    "Flag not found",
 			flagID:  42,
-			ctx:     context.WithValue(context.Background(), auth.UserUUIDContextKey, activeUser1.UUID),
+			ctx:     context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, activeUser1.UUID),
 			wantErr: errutils.ErrFlagNotFound,
 		},
 		{
 			name:    "Flag not found for user",
 			flagID:  activeUser1Flag.ID,
-			ctx:     context.WithValue(context.Background(), auth.UserUUIDContextKey, activeUser2.UUID),
+			ctx:     context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, activeUser2.UUID),
 			wantErr: errutils.ErrFlagNotFound,
 		},
 		{
 			name:    "Inactive user",
 			flagID:  inactiveUserFlag.ID,
-			ctx:     context.WithValue(context.Background(), auth.UserUUIDContextKey, inactiveUser.UUID),
+			ctx:     context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, inactiveUser.UUID),
 			wantErr: errutils.ErrFlagNotFound,
 		},
 		{
@@ -164,7 +164,7 @@ func TestServiceGetFlagByNameSuccess(t *testing.T) {
 	repo := flags.NewRepository()
 	svc := flags.NewService(dbPool, repo)
 
-	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
+	ctx := context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user.UUID)
 	fetchedFlag, err := svc.GetFlagByName(ctx, name)
 	require.NoError(t, err)
 
@@ -207,19 +207,19 @@ func TestServiceGetFlagByNameError(t *testing.T) {
 		{
 			name:     "Flag not found",
 			flagName: "unknown-flag",
-			ctx:      context.WithValue(context.Background(), auth.UserUUIDContextKey, activeUser1.UUID),
+			ctx:      context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, activeUser1.UUID),
 			wantErr:  errutils.ErrFlagNotFound,
 		},
 		{
 			name:     "Flag not found for user",
 			flagName: activeUser1Flag.Name,
-			ctx:      context.WithValue(context.Background(), auth.UserUUIDContextKey, activeUser2.UUID),
+			ctx:      context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, activeUser2.UUID),
 			wantErr:  errutils.ErrFlagNotFound,
 		},
 		{
 			name:     "Inactive user",
 			flagName: inactiveUserFlag.Name,
-			ctx:      context.WithValue(context.Background(), auth.UserUUIDContextKey, inactiveUser.UUID),
+			ctx:      context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, inactiveUser.UUID),
 			wantErr:  errutils.ErrFlagNotFound,
 		},
 		{
@@ -270,7 +270,7 @@ func TestServiceListFlags(t *testing.T) {
 	repo := flags.NewRepository()
 	svc := flags.NewService(dbPool, repo)
 
-	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user1.UUID)
+	ctx := context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user1.UUID)
 	fetchedUser1Flags, err := svc.ListFlags(ctx)
 	require.NoError(t, err)
 
@@ -278,7 +278,7 @@ func TestServiceListFlags(t *testing.T) {
 		return fetchedUser1Flags[i].Name < fetchedUser1Flags[j].Name
 	})
 
-	ctx = context.WithValue(context.Background(), auth.UserUUIDContextKey, user2.UUID)
+	ctx = context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user2.UUID)
 	fetchedUser2Flags, err := svc.ListFlags(ctx)
 	require.NoError(t, err)
 
@@ -322,7 +322,7 @@ func TestServiceUpdateFlagSuccess(t *testing.T) {
 	updatedName := "my-updated-flag"
 	updatedIsEnabled := true
 
-	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
+	ctx := context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user.UUID)
 	updatedFlag, err := svc.UpdateFlag(ctx, flag.ID, updatedName, updatedIsEnabled)
 	require.NoError(t, err)
 
@@ -365,19 +365,19 @@ func TestServiceUpdateFlagError(t *testing.T) {
 		{
 			name:    "Flag not found",
 			flagID:  42,
-			ctx:     context.WithValue(context.Background(), auth.UserUUIDContextKey, activeUser1.UUID),
+			ctx:     context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, activeUser1.UUID),
 			wantErr: errutils.ErrFlagNotFound,
 		},
 		{
 			name:    "Flag not found for user",
 			flagID:  activeUser1Flag.ID,
-			ctx:     context.WithValue(context.Background(), auth.UserUUIDContextKey, activeUser2.UUID),
+			ctx:     context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, activeUser2.UUID),
 			wantErr: errutils.ErrFlagNotFound,
 		},
 		{
 			name:    "Inactive user",
 			flagID:  inactiveUserFlag.ID,
-			ctx:     context.WithValue(context.Background(), auth.UserUUIDContextKey, inactiveUser.UUID),
+			ctx:     context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, inactiveUser.UUID),
 			wantErr: errutils.ErrFlagNotFound,
 		},
 		{

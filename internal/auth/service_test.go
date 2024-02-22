@@ -224,7 +224,7 @@ func TestServiceGetCurrentUserSuccess(t *testing.T) {
 	repo := auth.NewRepository()
 	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
-	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
+	ctx := context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user.UUID)
 	currentUser, err := svc.GetCurrentUser(ctx)
 	require.NoError(t, err)
 
@@ -252,7 +252,7 @@ func TestServiceGetCurrentUserError(t *testing.T) {
 	}{
 		{
 			name:    "User not found",
-			ctx:     context.WithValue(context.Background(), auth.UserUUIDContextKey, uuid.NewString()),
+			ctx:     context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, uuid.NewString()),
 			wantErr: errutils.ErrUserNotFound,
 		},
 		{
@@ -465,7 +465,7 @@ func TestServiceCreateAPIKeySuccess(t *testing.T) {
 	repo := auth.NewRepository()
 	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
-	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
+	ctx := context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user.UUID)
 	name := "My API Key"
 	expiresAt := pgtype.Timestamp{
 		Valid: false,
@@ -507,7 +507,7 @@ func TestServiceCreateAPIKeyAlreadyExists(t *testing.T) {
 	repo := auth.NewRepository()
 	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
-	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
+	ctx := context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user.UUID)
 	name := "My API Key"
 	expiresAt := pgtype.Timestamp{
 		Valid: false,
@@ -563,7 +563,7 @@ func TestServiceListAPIKeys(t *testing.T) {
 	repo := auth.NewRepository()
 	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
-	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user1.UUID)
+	ctx := context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user1.UUID)
 	fetchedUser1Keys, err := svc.ListAPIKeys(ctx)
 	require.NoError(t, err)
 
@@ -571,7 +571,7 @@ func TestServiceListAPIKeys(t *testing.T) {
 		return fetchedUser1Keys[i].Prefix < fetchedUser1Keys[j].Prefix
 	})
 
-	ctx = context.WithValue(context.Background(), auth.UserUUIDContextKey, user2.UUID)
+	ctx = context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user2.UUID)
 	fetchedUser2Keys, err := svc.ListAPIKeys(ctx)
 	require.NoError(t, err)
 
@@ -657,7 +657,7 @@ func TestServiceDeleteAPIKeySuccess(t *testing.T) {
 	repo := auth.NewRepository()
 	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
-	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
+	ctx := context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user.UUID)
 	err := svc.DeleteAPIKey(ctx, apiKey.ID)
 	require.NoError(t, err)
 
@@ -679,7 +679,7 @@ func TestServiceDeleteAPIKeyNotFound(t *testing.T) {
 	repo := auth.NewRepository()
 	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)
 
-	ctx := context.WithValue(context.Background(), auth.UserUUIDContextKey, user.UUID)
+	ctx := context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user.UUID)
 	err := svc.DeleteAPIKey(ctx, 42)
 	require.ErrorIs(t, err, errutils.ErrAPIKeyNotFound)
 }

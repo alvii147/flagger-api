@@ -10,9 +10,6 @@ import (
 	"github.com/alvii147/flagger-api/pkg/httputils"
 )
 
-// UserUUIDContextKey is the key in context where User UUID is stored after authentication.
-const UserUUIDContextKey = "userUUID"
-
 // JWTAuthMiddleware parses and validates JWT from authorization header.
 // If authentication fails, it returns 401.
 // If authentication is successful, it sets User UUID in context.
@@ -42,7 +39,7 @@ func JWTAuthMiddleware(next httputils.HandlerFunc) httputils.HandlerFunc {
 			return
 		}
 
-		next.ServeHTTP(w, r.Clone(context.WithValue(r.Context(), UserUUIDContextKey, claims.Subject)))
+		next.ServeHTTP(w, r.Clone(context.WithValue(r.Context(), AuthContextKeyUserUUID, claims.Subject)))
 	})
 }
 
@@ -86,6 +83,6 @@ func APIKeyAuthMiddleware(next httputils.HandlerFunc, svc Service) httputils.Han
 			return
 		}
 
-		next.ServeHTTP(w, r.Clone(context.WithValue(r.Context(), UserUUIDContextKey, apiKey.UserUUID)))
+		next.ServeHTTP(w, r.Clone(context.WithValue(r.Context(), AuthContextKeyUserUUID, apiKey.UserUUID)))
 	})
 }
