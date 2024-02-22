@@ -63,12 +63,12 @@ jobs:
         PGPASSWORD=${{env.FLAGGERAPI_POSTGRES_PASSWORD}} psql \
           --username=${{env.FLAGGERAPI_POSTGRES_USERNAME}} \
           --host=${{env.FLAGGERAPI_POSTGRES_HOSTNAME}} \
-          --port=$(FLAGGERAPI_POSTGRES_PORT) \
+          --port=${{env.FLAGGERAPI_POSTGRES_PORT}} \
           --command="CREATE DATABASE ${{FLAGGERAPI_POSTGRES_DATABASE_NAME}};"
         PGPASSWORD=${{env.FLAGGERAPI_POSTGRES_PASSWORD}} psql \
           --username=${{env.FLAGGERAPI_POSTGRES_USERNAME}} \
           --host=${{env.FLAGGERAPI_POSTGRES_HOSTNAME}} \
-          --port=$(FLAGGERAPI_POSTGRES_PORT) \
+          --port=${{env.FLAGGERAPI_POSTGRES_PORT}} \
           --dbname=${{FLAGGERAPI_POSTGRES_DATABASE_NAME}} \
           --file=db/create_tables.sql
 
