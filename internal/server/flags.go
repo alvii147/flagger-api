@@ -10,7 +10,6 @@ import (
 	"github.com/alvii147/flagger-api/pkg/api"
 	"github.com/alvii147/flagger-api/pkg/errutils"
 	"github.com/alvii147/flagger-api/pkg/httputils"
-	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
@@ -19,12 +18,8 @@ const (
 	FlagNameParamKey = "name"
 )
 
-func getFlagIDParam(vars map[string]string) (int, error) {
-	param, ok := vars[FlagIDParamKey]
-	if !ok {
-		return 0, errors.New("getFlagIDParam failed, no param found")
-	}
-
+func getFlagIDParam(r *http.Request) (int, error) {
+	param := r.PathValue(FlagIDParamKey)
 	flagID, err := strconv.Atoi(param)
 	if err != nil {
 		return 0, fmt.Errorf("getFlagIDParam failed to strconv.Atoi: %v", err)
@@ -33,9 +28,9 @@ func getFlagIDParam(vars map[string]string) (int, error) {
 	return flagID, nil
 }
 
-func getFlagNameParam(vars map[string]string) (string, error) {
-	param, ok := vars[FlagNameParamKey]
-	if !ok {
+func getFlagNameParam(r *http.Request) (string, error) {
+	param := r.PathValue(FlagNameParamKey)
+	if param == "" {
 		return "", errors.New("getFlagNameParam failed, no param found")
 	}
 
@@ -103,7 +98,7 @@ func (ctrl *controller) HandleCreateFlag(w *httputils.ResponseWriter, r *http.Re
 // Methods: GET
 // URL: /flags/{id}
 func (ctrl *controller) HandleGetFlagByID(w *httputils.ResponseWriter, r *http.Request) {
-	flagID, err := getFlagIDParam(mux.Vars(r))
+	flagID, err := getFlagIDParam(r)
 	if err != nil {
 		w.WriteJSON(
 			api.ErrorResponse{
@@ -155,7 +150,7 @@ func (ctrl *controller) HandleGetFlagByID(w *httputils.ResponseWriter, r *http.R
 // Methods: GET
 // URL: /api/flags/{name}
 func (ctrl *controller) HandleGetFlagByName(w *httputils.ResponseWriter, r *http.Request) {
-	flagName, err := getFlagNameParam(mux.Vars(r))
+	flagName, err := getFlagNameParam(r)
 	if err != nil {
 		w.WriteJSON(
 			api.ErrorResponse{
@@ -257,7 +252,7 @@ func (ctrl *controller) HandleListFlags(w *httputils.ResponseWriter, r *http.Req
 // Methods: PUT
 // URL: /flags/{id}
 func (ctrl *controller) HandleUpdateFlag(w *httputils.ResponseWriter, r *http.Request) {
-	flagID, err := getFlagIDParam(mux.Vars(r))
+	flagID, err := getFlagIDParam(r)
 	if err != nil {
 		w.WriteJSON(
 			api.ErrorResponse{

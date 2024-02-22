@@ -13,7 +13,6 @@ import (
 	"github.com/alvii147/flagger-api/internal/templatesmanager"
 	"github.com/alvii147/flagger-api/pkg/logging"
 	"github.com/alvii147/flagger-api/pkg/mailclient"
-	"github.com/gorilla/mux"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -76,12 +75,12 @@ func NewController() (*controller, error) {
 }
 
 // Serve runs the Controller server.
-func (ctrl *controller) Serve(router *mux.Router) error {
+func (ctrl *controller) Serve(mux http.Handler) error {
 	config := env.GetConfig()
 
 	addr := fmt.Sprintf("%s:%d", config.Hostname, config.Port)
 	ctrl.logger.LogInfo("Server running on", addr)
-	err := http.ListenAndServe(addr, router)
+	err := http.ListenAndServe(addr, mux)
 	if err != nil {
 		return fmt.Errorf("Serve failed to http.ListenAndServe %s: %w", addr, err)
 	}

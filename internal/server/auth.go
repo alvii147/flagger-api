@@ -11,17 +11,12 @@ import (
 	"github.com/alvii147/flagger-api/pkg/api"
 	"github.com/alvii147/flagger-api/pkg/errutils"
 	"github.com/alvii147/flagger-api/pkg/httputils"
-	"github.com/gorilla/mux"
 )
 
 const APIKeyIDParamKey = "id"
 
-func getAPIKeyIDParam(vars map[string]string) (int, error) {
-	param, ok := vars[APIKeyIDParamKey]
-	if !ok {
-		return 0, errors.New("getAPIKeyIDParam failed, no param found")
-	}
-
+func getAPIKeyIDParam(r *http.Request) (int, error) {
+	param := r.PathValue(APIKeyIDParamKey)
 	apiKeyID, err := strconv.Atoi(param)
 	if err != nil {
 		return 0, fmt.Errorf("getAPIKeyIDParam failed to strconv.Atoi: %v", err)
@@ -444,7 +439,7 @@ func (ctrl *controller) HandleListAPIKeys(w *httputils.ResponseWriter, r *http.R
 // Methods: DELETE
 // URL: /auth/api-keys/{id}
 func (ctrl *controller) HandleDeleteAPIKey(w *httputils.ResponseWriter, r *http.Request) {
-	apiKeyID, err := getAPIKeyIDParam(mux.Vars(r))
+	apiKeyID, err := getAPIKeyIDParam(r)
 	if err != nil {
 		w.WriteJSON(
 			api.ErrorResponse{

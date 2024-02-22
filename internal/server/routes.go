@@ -6,25 +6,24 @@ import (
 	"github.com/alvii147/flagger-api/internal/auth"
 	"github.com/alvii147/flagger-api/pkg/httputils"
 	"github.com/alvii147/flagger-api/pkg/logging"
-	"github.com/gorilla/mux"
 )
 
 // Route sets up routes for the controller and returns a router.
-func (ctrl *controller) Route() *mux.Router {
-	router := mux.NewRouter()
+func (ctrl *controller) Route() *http.ServeMux {
+	mux := http.NewServeMux()
 
-	router.Handle(
-		"/auth/users",
+	mux.Handle(
+		"POST /auth/users",
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				ctrl.HandleCreateUser,
 				ctrl.logger,
 			),
 		),
-	).Methods(http.MethodPost)
+	)
 
-	router.Handle(
-		"/auth/users/me",
+	mux.Handle(
+		"GET /auth/users/me",
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				auth.JWTAuthMiddleware(
@@ -33,10 +32,10 @@ func (ctrl *controller) Route() *mux.Router {
 				ctrl.logger,
 			),
 		),
-	).Methods(http.MethodGet)
+	)
 
-	router.Handle(
-		"/api/auth/users/me",
+	mux.Handle(
+		"GET /api/auth/users/me",
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				auth.APIKeyAuthMiddleware(
@@ -46,40 +45,40 @@ func (ctrl *controller) Route() *mux.Router {
 				ctrl.logger,
 			),
 		),
-	).Methods(http.MethodGet)
+	)
 
-	router.Handle(
-		"/auth/users/activate",
+	mux.Handle(
+		"POST /auth/users/activate",
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				ctrl.HandleActivateUser,
 				ctrl.logger,
 			),
 		),
-	).Methods(http.MethodPost)
+	)
 
-	router.Handle(
-		"/auth/tokens",
+	mux.Handle(
+		"POST /auth/tokens",
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				ctrl.HandleCreateJWT,
 				ctrl.logger,
 			),
 		),
-	).Methods(http.MethodPost)
+	)
 
-	router.Handle(
-		"/auth/tokens/refresh",
+	mux.Handle(
+		"POST /auth/tokens/refresh",
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				ctrl.HandleRefreshJWT,
 				ctrl.logger,
 			),
 		),
-	).Methods(http.MethodPost)
+	)
 
-	router.Handle(
-		"/auth/api-keys",
+	mux.Handle(
+		"POST /auth/api-keys",
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				auth.JWTAuthMiddleware(
@@ -88,10 +87,10 @@ func (ctrl *controller) Route() *mux.Router {
 				ctrl.logger,
 			),
 		),
-	).Methods(http.MethodPost)
+	)
 
-	router.Handle(
-		"/auth/api-keys",
+	mux.Handle(
+		"GET /auth/api-keys",
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				auth.JWTAuthMiddleware(
@@ -100,10 +99,10 @@ func (ctrl *controller) Route() *mux.Router {
 				ctrl.logger,
 			),
 		),
-	).Methods(http.MethodGet)
+	)
 
-	router.Handle(
-		"/auth/api-keys/{id:[0-9]+}",
+	mux.Handle(
+		"DELETE /auth/api-keys/{id}",
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				auth.JWTAuthMiddleware(
@@ -112,10 +111,10 @@ func (ctrl *controller) Route() *mux.Router {
 				ctrl.logger,
 			),
 		),
-	).Methods(http.MethodDelete)
+	)
 
-	router.Handle(
-		"/flags",
+	mux.Handle(
+		"GET /flags",
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				auth.JWTAuthMiddleware(
@@ -124,10 +123,10 @@ func (ctrl *controller) Route() *mux.Router {
 				ctrl.logger,
 			),
 		),
-	).Methods(http.MethodGet)
+	)
 
-	router.Handle(
-		"/flags",
+	mux.Handle(
+		"POST /flags",
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				auth.JWTAuthMiddleware(
@@ -136,10 +135,10 @@ func (ctrl *controller) Route() *mux.Router {
 				ctrl.logger,
 			),
 		),
-	).Methods(http.MethodPost)
+	)
 
-	router.Handle(
-		"/flags/{id:[0-9]+}",
+	mux.Handle(
+		"GET /flags/{id}",
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				auth.JWTAuthMiddleware(
@@ -148,10 +147,10 @@ func (ctrl *controller) Route() *mux.Router {
 				ctrl.logger,
 			),
 		),
-	).Methods(http.MethodGet)
+	)
 
-	router.Handle(
-		"/api/flags/{name:[a-z0-9]+(?:-[a-z0-9]+)*}",
+	mux.Handle(
+		"GET /api/flags/{name}",
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				auth.APIKeyAuthMiddleware(
@@ -161,10 +160,10 @@ func (ctrl *controller) Route() *mux.Router {
 				ctrl.logger,
 			),
 		),
-	).Methods(http.MethodGet)
+	)
 
-	router.Handle(
-		"/flags/{id:[0-9]+}",
+	mux.Handle(
+		"PUT /flags/{id}",
 		httputils.ResponseWriterMiddleware(
 			logging.LoggerMiddleware(
 				auth.JWTAuthMiddleware(
@@ -173,7 +172,7 @@ func (ctrl *controller) Route() *mux.Router {
 				ctrl.logger,
 			),
 		),
-	).Methods(http.MethodPut)
+	)
 
-	return router
+	return mux
 }

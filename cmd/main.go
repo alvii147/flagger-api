@@ -34,9 +34,9 @@ func main() {
 		os.Exit(0)
 	}()
 
-	router := ctrl.Route()
+	mux := ctrl.Route()
 
-	err = ctrl.Serve(router)
+	err = ctrl.Serve(mux)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to ctrl.Serve: %v\n", err)
 		return

@@ -24,13 +24,13 @@ func TestGetFlagIDParam(t *testing.T) {
 
 	testcases := []struct {
 		name       string
-		vars       map[string]string
+		pathValues map[string]string
 		wantFlagID int
 		wantErr    bool
 	}{
 		{
 			name: "Valid flag ID",
-			vars: map[string]string{
+			pathValues: map[string]string{
 				"id": "42",
 			},
 			wantFlagID: 42,
@@ -38,7 +38,7 @@ func TestGetFlagIDParam(t *testing.T) {
 		},
 		{
 			name: "No flag ID",
-			vars: map[string]string{
+			pathValues: map[string]string{
 				"dead": "beef",
 			},
 			wantFlagID: 0,
@@ -46,7 +46,7 @@ func TestGetFlagIDParam(t *testing.T) {
 		},
 		{
 			name: "Invalid flag ID",
-			vars: map[string]string{
+			pathValues: map[string]string{
 				"id": "deadbeef",
 			},
 			wantFlagID: 0,
@@ -59,7 +59,12 @@ func TestGetFlagIDParam(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
-			flagID, err := server.GetFlagIDParam(testcase.vars)
+			req := &http.Request{}
+			for name, value := range testcase.pathValues {
+				req.SetPathValue(name, value)
+			}
+
+			flagID, err := server.GetFlagIDParam(req)
 			if testcase.wantErr {
 				require.Error(t, err)
 			} else {
@@ -75,13 +80,13 @@ func TestGetFlagNameParam(t *testing.T) {
 
 	testcases := []struct {
 		name         string
-		vars         map[string]string
+		pathValues   map[string]string
 		wantFlagName string
 		wantErr      bool
 	}{
 		{
 			name: "Valid flag name",
-			vars: map[string]string{
+			pathValues: map[string]string{
 				"name": "my-flag",
 			},
 			wantFlagName: "my-flag",
@@ -89,7 +94,7 @@ func TestGetFlagNameParam(t *testing.T) {
 		},
 		{
 			name: "No flag name",
-			vars: map[string]string{
+			pathValues: map[string]string{
 				"dead": "beef",
 			},
 			wantFlagName: "",
@@ -102,7 +107,12 @@ func TestGetFlagNameParam(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
-			name, err := server.GetFlagNameParam(testcase.vars)
+			req := &http.Request{}
+			for name, value := range testcase.pathValues {
+				req.SetPathValue(name, value)
+			}
+
+			name, err := server.GetFlagNameParam(req)
 			if testcase.wantErr {
 				require.Error(t, err)
 			} else {
@@ -119,8 +129,8 @@ func TestFlagFlow(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 
-	router := ctrl.Route()
-	srv := httptest.NewServer(router)
+	mux := ctrl.Route()
+	srv := httptest.NewServer(mux)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,

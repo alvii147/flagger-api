@@ -38,13 +38,13 @@ func TestGetAPIKeyIDParam(t *testing.T) {
 
 	testcases := []struct {
 		name         string
-		vars         map[string]string
+		pathValues   map[string]string
 		wantAPIKeyID int
 		wantErr      bool
 	}{
 		{
 			name: "Valid API key ID",
-			vars: map[string]string{
+			pathValues: map[string]string{
 				"id": "42",
 			},
 			wantAPIKeyID: 42,
@@ -52,7 +52,7 @@ func TestGetAPIKeyIDParam(t *testing.T) {
 		},
 		{
 			name: "No API key ID",
-			vars: map[string]string{
+			pathValues: map[string]string{
 				"dead": "beef",
 			},
 			wantAPIKeyID: 0,
@@ -60,7 +60,7 @@ func TestGetAPIKeyIDParam(t *testing.T) {
 		},
 		{
 			name: "Invalid API key ID",
-			vars: map[string]string{
+			pathValues: map[string]string{
 				"id": "deadbeef",
 			},
 			wantAPIKeyID: 0,
@@ -73,7 +73,12 @@ func TestGetAPIKeyIDParam(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
-			apiKeyID, err := server.GetAPIKeyIDParam(testcase.vars)
+			req := &http.Request{}
+			for name, value := range testcase.pathValues {
+				req.SetPathValue(name, value)
+			}
+
+			apiKeyID, err := server.GetAPIKeyIDParam(req)
 			if testcase.wantErr {
 				require.Error(t, err)
 			} else {
@@ -90,8 +95,8 @@ func TestHandleCreateUser(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 
-	router := ctrl.Route()
-	srv := httptest.NewServer(router)
+	mux := ctrl.Route()
+	srv := httptest.NewServer(mux)
 
 	t.Cleanup(func() {
 		err = ctrl.Close()
@@ -317,8 +322,8 @@ func TestHandleActivateUser(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 
-	router := ctrl.Route()
-	srv := httptest.NewServer(router)
+	mux := ctrl.Route()
+	srv := httptest.NewServer(mux)
 
 	t.Cleanup(func() {
 		err = ctrl.Close()
@@ -450,8 +455,8 @@ func TestHandleGetUserMe(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 
-	router := ctrl.Route()
-	srv := httptest.NewServer(router)
+	mux := ctrl.Route()
+	srv := httptest.NewServer(mux)
 
 	t.Cleanup(func() {
 		err = ctrl.Close()
@@ -587,8 +592,8 @@ func TestHandleCreateJWT(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 
-	router := ctrl.Route()
-	srv := httptest.NewServer(router)
+	mux := ctrl.Route()
+	srv := httptest.NewServer(mux)
 
 	t.Cleanup(func() {
 		err = ctrl.Close()
@@ -765,8 +770,8 @@ func TestHandleRefreshJWT(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 
-	router := ctrl.Route()
-	srv := httptest.NewServer(router)
+	mux := ctrl.Route()
+	srv := httptest.NewServer(mux)
 
 	t.Cleanup(func() {
 		err = ctrl.Close()
@@ -877,8 +882,8 @@ func TestHandleCreateAPIKey(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 
-	router := ctrl.Route()
-	srv := httptest.NewServer(router)
+	mux := ctrl.Route()
+	srv := httptest.NewServer(mux)
 
 	t.Cleanup(func() {
 		err = ctrl.Close()
@@ -1043,8 +1048,8 @@ func TestAPIKeyFlow(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 
-	router := ctrl.Route()
-	srv := httptest.NewServer(router)
+	mux := ctrl.Route()
+	srv := httptest.NewServer(mux)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,

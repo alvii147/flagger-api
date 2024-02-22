@@ -16,7 +16,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.20'
+        go-version: '1.22'
 
     - name: Run Go vet
       run: |
@@ -28,8 +28,11 @@ jobs:
 
   tests:
     env:
+      FLAGGERAPI_POSTGRES_HOSTNAME: "localhost"
+      FLAGGERAPI_POSTGRES_PORT: 5432
       FLAGGERAPI_POSTGRES_USERNAME: "postgres"
       FLAGGERAPI_POSTGRES_PASSWORD: "postgres"
+      FLAGGERAPI_POSTGRES_DATABASE_NAME: "flaggerdb"
 
     runs-on: ubuntu-latest
 
@@ -39,7 +42,6 @@ jobs:
         env:
           POSTGRES_USER: "postgres"
           POSTGRES_PASSWORD: "postgres"
-          POSTGRES_DB: "flaggerdb"
         ports:
           - 5432:5432
         options: >-
@@ -54,8 +56,26 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.20'
+        go-version: '1.22'
 
-    - name: Run unit tests with coverage
+    - name: Create database
       run: |
-        VERBOSE=1 make cover
+        PGPASSWORD=${{env.FLAGGERAPI_POSTGRES_PASSWORD}} psql \
+        --username=${{env.FLAGGERAPI_POSTGRES_USERNAME}} \
+        --host=${{env.FLAGGERAPI_POSTGRES_HOSTNAME}} \
+        --port=$(FLAGGERAPI_POSTGRES_PORT) \
+        --command="CREATE DATABASE ${{FLAGGERAPI_POSTGRES_DATABASE_NAME}};"
+        PGPASSWORD=${{env.FLAGGERAPI_POSTGRES_PASSWORD}} psql \
+        --username=${{env.FLAGGERAPI_POSTGRES_USERNAME}} \
+        --host=${{env.FLAGGERAPI_POSTGRES_HOSTNAME}} \
+        --port=$(FLAGGERAPI_POSTGRES_PORT) \
+        --dbname=${{FLAGGERAPI_POSTGRES_DATABASE_NAME}} \
+        --file=db/create_tables.sql
+
+    - name: Run unit tests
+      run: |
+        FLAGGERAPI_MAIL_CLIENT_TYPE=inmem go test -v -coverprofile coverage.out ./...
+
+    - name: Show coverage report
+      run: |
+        go tool cover -func coverage.out
