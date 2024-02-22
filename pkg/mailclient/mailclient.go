@@ -13,13 +13,13 @@ import (
 
 // mail client types.
 const (
-	MailClientTypeSMTP     = "smtp"
-	MailClientTypeInMemory = "inmem"
-	MailClientTypeConsole  = "console"
+	ClientTypeSMTP     = "smtp"
+	ClientTypeInMemory = "inmem"
+	ClientTypeConsole  = "console"
 )
 
-// MailClient is used to handle sending of emails.
-type MailClient interface {
+// Client is used to handle sending of emails.
+type Client interface {
 	Send(
 		to []string,
 		subject string,

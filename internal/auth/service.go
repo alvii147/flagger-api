@@ -32,7 +32,7 @@ type Service interface {
 // service implements Service.
 type service struct {
 	dbPool      *pgxpool.Pool
-	mailClient  mailclient.MailClient
+	mailClient  mailclient.Client
 	tmplManager templatesmanager.Manager
 	repository  Repository
 }
@@ -40,7 +40,7 @@ type service struct {
 // NewService returns a new service.
 func NewService(
 	dbPool *pgxpool.Pool,
-	mailClient mailclient.MailClient,
+	mailClient mailclient.Client,
 	tmplManager templatesmanager.Manager,
 	repo Repository,
 ) *service {

@@ -17,7 +17,7 @@ func TestConsoleMailClient(t *testing.T) {
 	username := testkit.GenerateFakeEmail()
 	var buf bytes.Buffer
 
-	mailClient := mailclient.NewConsoleMailClient(username, &buf)
+	client := mailclient.NewConsoleClient(username, &buf)
 
 	to := testkit.GenerateFakeEmail()
 	subject := testkit.MustGenerateRandomString(12, true, true, true)
@@ -29,7 +29,7 @@ func TestConsoleMailClient(t *testing.T) {
 		"Value": 42,
 	}
 
-	err = mailClient.Send([]string{to}, subject, textTmpl, htmlTmpl, tmplData)
+	err = client.Send([]string{to}, subject, textTmpl, htmlTmpl, tmplData)
 	require.NoError(t, err)
 
 	textMsg, htmlMsg := testkit.MustParseMailMessage(buf.String())

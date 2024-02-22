@@ -7,23 +7,23 @@ import (
 	texttemplate "text/template"
 )
 
-// consoleMailClient implements a MailClient that prints email contents to the console.
+// consoleClient implements a Client that prints email contents to the console.
 // This should typically be used in local development.
-type consoleMailClient struct {
+type consoleClient struct {
 	username string
 	writer   io.Writer
 }
 
-// NewConsoleMailClient returns a new consoleMailClient.
-func NewConsoleMailClient(username string, writer io.Writer) *consoleMailClient {
-	return &consoleMailClient{
+// NewConsoleClient returns a new consoleClient.
+func NewConsoleClient(username string, writer io.Writer) *consoleClient {
+	return &consoleClient{
 		username: username,
 		writer:   writer,
 	}
 }
 
 // Send prints email body to the console.
-func (cmc *consoleMailClient) Send(
+func (cmc *consoleClient) Send(
 	to []string,
 	subject string,
 	textTmpl *texttemplate.Template,

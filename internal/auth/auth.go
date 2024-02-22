@@ -200,7 +200,7 @@ func validateActivationJWT(token string) (*api.ActivationJWTClaims, bool) {
 }
 
 // sendActivationMail sends activation email to User.
-func sendActivationMail(user *User, mailClient mailclient.MailClient, templatesManager templatesmanager.Manager) error {
+func sendActivationMail(user *User, mailClient mailclient.Client, templatesManager templatesmanager.Manager) error {
 	config := env.GetConfig()
 
 	activationToken, err := createActivationJWT(user.UUID)

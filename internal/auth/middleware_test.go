@@ -213,7 +213,7 @@ func TestAPIKeyAuthMiddleware(t *testing.T) {
 	})
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
-	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
+	mailClient := mailclient.NewInMemClient("support@flagger.com")
 	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
 	svc := auth.NewService(dbPool, mailClient, tmplManager, repo)

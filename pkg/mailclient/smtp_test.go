@@ -15,5 +15,5 @@ func TestNewSMTPMailClient(t *testing.T) {
 	username := testkit.GenerateFakeEmail()
 	password := testkit.GenerateFakePassword()
 
-	mailclient.NewSMTPMailClient(hostname, port, username, password)
+	mailclient.NewSMTPClient(hostname, port, username, password)
 }

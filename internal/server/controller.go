@@ -20,7 +20,7 @@ import (
 // controller handles server API operations.
 type controller struct {
 	dbPool       *pgxpool.Pool
-	mailClient   mailclient.MailClient
+	mailClient   mailclient.Client
 	tmplManager  templatesmanager.Manager
 	authService  auth.Service
 	flagsService flags.Service
@@ -35,19 +35,19 @@ func NewController() (*controller, error) {
 		return nil, fmt.Errorf("NewController failed to database.GetPool: %w", err)
 	}
 
-	var mailClient mailclient.MailClient
+	var mailClient mailclient.Client
 	switch config.MailClientType {
-	case mailclient.MailClientTypeSMTP:
-		mailClient = mailclient.NewSMTPMailClient(
+	case mailclient.ClientTypeSMTP:
+		mailClient = mailclient.NewSMTPClient(
 			config.SMTPHostname,
 			config.SMTPPort,
 			config.SMTPUsername,
 			config.SMTPPassword,
 		)
-	case mailclient.MailClientTypeInMemory:
-		mailClient = mailclient.NewInMemMailClient("support@flagger.com")
-	case mailclient.MailClientTypeConsole:
-		mailClient = mailclient.NewConsoleMailClient("support@flagger.com", os.Stdout)
+	case mailclient.ClientTypeInMemory:
+		mailClient = mailclient.NewInMemClient("support@flagger.com")
+	case mailclient.ClientTypeConsole:
+		mailClient = mailclient.NewConsoleClient("support@flagger.com", os.Stdout)
 	default:
 		return nil, fmt.Errorf("NewController failed, unknown mail client type %s", config.MailClientType)
 	}

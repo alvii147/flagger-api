@@ -7,8 +7,8 @@ import (
 	"time"
 )
 
-// inMemMailLogEntry represents an in-memory entry of an email event.
-type inMemMailLogEntry struct {
+// logEntry represents an in-memory entry of an email event.
+type logEntry struct {
 	From    string
 	To      []string
 	Subject string
@@ -16,22 +16,22 @@ type inMemMailLogEntry struct {
 	SentAt  time.Time
 }
 
-// inMemMailClient implements a MailClient that saves email data in local memory.
+// inMemClient implements a Client that saves email data in local memory.
 // This should typically be used in unit tests.
-type inMemMailClient struct {
+type inMemClient struct {
 	username string
-	MailLogs []inMemMailLogEntry
+	Logs     []logEntry
 }
 
-// NewInMemMailClient returns a new inMemMailClient.
-func NewInMemMailClient(username string) *inMemMailClient {
-	return &inMemMailClient{
+// NewInMemClient returns a new inMemClient.
+func NewInMemClient(username string) *inMemClient {
+	return &inMemClient{
 		username: username,
 	}
 }
 
 // Send adds an email event to in-memory storage.
-func (immc *inMemMailClient) Send(
+func (immc *inMemClient) Send(
 	to []string,
 	subject string,
 	textTmpl *texttemplate.Template,
@@ -43,9 +43,9 @@ func (immc *inMemMailClient) Send(
 		return fmt.Errorf("Send failed to BuildMail: %w", err)
 	}
 
-	immc.MailLogs = append(
-		immc.MailLogs,
-		inMemMailLogEntry{
+	immc.Logs = append(
+		immc.Logs,
+		logEntry{
 			From:    immc.username,
 			To:      to,
 			Subject: subject,

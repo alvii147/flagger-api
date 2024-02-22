@@ -7,18 +7,18 @@ import (
 	texttemplate "text/template"
 )
 
-// smtpMailClient implements a MailClient that sends email through SMTP server.
+// smtpClient implements a Client that sends email through SMTP server.
 // This should typically be used in production.
-type smtpMailClient struct {
+type smtpClient struct {
 	hostname string
 	addr     string
 	username string
 	password string
 }
 
-// NewSMTPMailClient returns a new smtpMailClient.
-func NewSMTPMailClient(hostname string, port int, username string, password string) *smtpMailClient {
-	return &smtpMailClient{
+// NewSMTPClient returns a new smtpClient.
+func NewSMTPClient(hostname string, port int, username string, password string) *smtpClient {
+	return &smtpClient{
 		hostname: hostname,
 		addr:     fmt.Sprintf("%s:%d", hostname, port),
 		username: username,
@@ -27,7 +27,7 @@ func NewSMTPMailClient(hostname string, port int, username string, password stri
 }
 
 // Send sends an email through SMTP server.
-func (smc *smtpMailClient) Send(
+func (smc *smtpClient) Send(
 	to []string,
 	subject string,
 	textTmpl *texttemplate.Template,

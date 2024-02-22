@@ -342,14 +342,14 @@ func TestSendActivationMail(t *testing.T) {
 		IsSuperUser: false,
 	}
 
-	mailClient := mailclient.NewInMemMailClient("support@flagger.com")
-	mailCount := len(mailClient.MailLogs)
+	mailClient := mailclient.NewInMemClient("support@flagger.com")
+	mailCount := len(mailClient.Logs)
 	tmplManager := templatesmanager.NewManager()
 	err := auth.SendActivationMail(user, mailClient, tmplManager)
 	require.NoError(t, err)
-	require.Len(t, mailClient.MailLogs, mailCount+1)
+	require.Len(t, mailClient.Logs, mailCount+1)
 
-	lastMail := mailClient.MailLogs[len(mailClient.MailLogs)-1]
+	lastMail := mailClient.Logs[len(mailClient.Logs)-1]
 	require.Equal(t, []string{user.Email}, lastMail.To)
 	require.Equal(t, "Welcome to Flagger!", lastMail.Subject)
 	testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), lastMail.SentAt)
