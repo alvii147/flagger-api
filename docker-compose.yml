@@ -20,7 +20,7 @@ services:
     command: go run ./...
     container_name: flagger-api-server
     environment:
-      FLAGGERAPI_HOSTNAME: localhost
+      FLAGGERAPI_HOSTNAME: 0.0.0.0
       FLAGGERAPI_PORT: 8080
       FLAGGERAPI_POSTGRES_HOSTNAME: host.docker.internal
       FLAGGERAPI_POSTGRES_PORT: 5432
