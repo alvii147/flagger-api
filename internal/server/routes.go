@@ -11,168 +11,28 @@ import (
 // Route sets up routes for the controller and returns a router.
 func (ctrl *controller) Route() *http.ServeMux {
 	mux := http.NewServeMux()
+	loggerMiddleware := func(next httputils.HandlerFunc) httputils.HandlerFunc {
+		return logging.LoggerMiddleware(next, ctrl.logger)
+	}
+	apiKeyMiddleware := func(next httputils.HandlerFunc) httputils.HandlerFunc {
+		return auth.APIKeyAuthMiddleware(next, ctrl.authService)
+	}
 
-	mux.Handle(
-		"POST /auth/users",
-		httputils.ResponseWriterMiddleware(
-			logging.LoggerMiddleware(
-				ctrl.HandleCreateUser,
-				ctrl.logger,
-			),
-		),
-	)
+	httputils.HandleWithMiddlewaresPOST(mux, "/auth/users", ctrl.HandleCreateUser, loggerMiddleware)
+	httputils.HandleWithMiddlewaresGET(mux, "/auth/users/me", ctrl.HandleGetUserMe, auth.JWTAuthMiddleware, loggerMiddleware)
+	httputils.HandleWithMiddlewaresGET(mux, "/api/auth/users/me", ctrl.HandleGetUserMe, apiKeyMiddleware, loggerMiddleware)
+	httputils.HandleWithMiddlewaresPOST(mux, "/auth/users/activate", ctrl.HandleActivateUser, loggerMiddleware)
+	httputils.HandleWithMiddlewaresPOST(mux, "/auth/tokens", ctrl.HandleCreateJWT, loggerMiddleware)
+	httputils.HandleWithMiddlewaresPOST(mux, "/auth/tokens/refresh", ctrl.HandleRefreshJWT, loggerMiddleware)
+	httputils.HandleWithMiddlewaresPOST(mux, "/auth/api-keys", ctrl.HandleCreateAPIKey, auth.JWTAuthMiddleware, loggerMiddleware)
+	httputils.HandleWithMiddlewaresGET(mux, "/auth/api-keys", ctrl.HandleListAPIKeys, auth.JWTAuthMiddleware, loggerMiddleware)
+	httputils.HandleWithMiddlewaresDELETE(mux, "/auth/api-keys/{id}", ctrl.HandleDeleteAPIKey, auth.JWTAuthMiddleware, loggerMiddleware)
 
-	mux.Handle(
-		"GET /auth/users/me",
-		httputils.ResponseWriterMiddleware(
-			logging.LoggerMiddleware(
-				auth.JWTAuthMiddleware(
-					ctrl.HandleGetUserMe,
-				),
-				ctrl.logger,
-			),
-		),
-	)
-
-	mux.Handle(
-		"GET /api/auth/users/me",
-		httputils.ResponseWriterMiddleware(
-			logging.LoggerMiddleware(
-				auth.APIKeyAuthMiddleware(
-					ctrl.HandleGetUserMe,
-					ctrl.authService,
-				),
-				ctrl.logger,
-			),
-		),
-	)
-
-	mux.Handle(
-		"POST /auth/users/activate",
-		httputils.ResponseWriterMiddleware(
-			logging.LoggerMiddleware(
-				ctrl.HandleActivateUser,
-				ctrl.logger,
-			),
-		),
-	)
-
-	mux.Handle(
-		"POST /auth/tokens",
-		httputils.ResponseWriterMiddleware(
-			logging.LoggerMiddleware(
-				ctrl.HandleCreateJWT,
-				ctrl.logger,
-			),
-		),
-	)
-
-	mux.Handle(
-		"POST /auth/tokens/refresh",
-		httputils.ResponseWriterMiddleware(
-			logging.LoggerMiddleware(
-				ctrl.HandleRefreshJWT,
-				ctrl.logger,
-			),
-		),
-	)
-
-	mux.Handle(
-		"POST /auth/api-keys",
-		httputils.ResponseWriterMiddleware(
-			logging.LoggerMiddleware(
-				auth.JWTAuthMiddleware(
-					ctrl.HandleCreateAPIKey,
-				),
-				ctrl.logger,
-			),
-		),
-	)
-
-	mux.Handle(
-		"GET /auth/api-keys",
-		httputils.ResponseWriterMiddleware(
-			logging.LoggerMiddleware(
-				auth.JWTAuthMiddleware(
-					ctrl.HandleListAPIKeys,
-				),
-				ctrl.logger,
-			),
-		),
-	)
-
-	mux.Handle(
-		"DELETE /auth/api-keys/{id}",
-		httputils.ResponseWriterMiddleware(
-			logging.LoggerMiddleware(
-				auth.JWTAuthMiddleware(
-					ctrl.HandleDeleteAPIKey,
-				),
-				ctrl.logger,
-			),
-		),
-	)
-
-	mux.Handle(
-		"GET /flags",
-		httputils.ResponseWriterMiddleware(
-			logging.LoggerMiddleware(
-				auth.JWTAuthMiddleware(
-					ctrl.HandleListFlags,
-				),
-				ctrl.logger,
-			),
-		),
-	)
-
-	mux.Handle(
-		"POST /flags",
-		httputils.ResponseWriterMiddleware(
-			logging.LoggerMiddleware(
-				auth.JWTAuthMiddleware(
-					ctrl.HandleCreateFlag,
-				),
-				ctrl.logger,
-			),
-		),
-	)
-
-	mux.Handle(
-		"GET /flags/{id}",
-		httputils.ResponseWriterMiddleware(
-			logging.LoggerMiddleware(
-				auth.JWTAuthMiddleware(
-					ctrl.HandleGetFlagByID,
-				),
-				ctrl.logger,
-			),
-		),
-	)
-
-	mux.Handle(
-		"GET /api/flags/{name}",
-		httputils.ResponseWriterMiddleware(
-			logging.LoggerMiddleware(
-				auth.APIKeyAuthMiddleware(
-					ctrl.HandleGetFlagByName,
-					ctrl.authService,
-				),
-				ctrl.logger,
-			),
-		),
-	)
-
-	mux.Handle(
-		"PUT /flags/{id}",
-		httputils.ResponseWriterMiddleware(
-			logging.LoggerMiddleware(
-				auth.JWTAuthMiddleware(
-					ctrl.HandleUpdateFlag,
-				),
-				ctrl.logger,
-			),
-		),
-	)
+	httputils.HandleWithMiddlewaresGET(mux, "/flags", ctrl.HandleListFlags, auth.JWTAuthMiddleware, loggerMiddleware)
+	httputils.HandleWithMiddlewaresPOST(mux, "/flags", ctrl.HandleCreateFlag, auth.JWTAuthMiddleware, loggerMiddleware)
+	httputils.HandleWithMiddlewaresGET(mux, "/flags/{id}", ctrl.HandleGetFlagByID, auth.JWTAuthMiddleware, loggerMiddleware)
+	httputils.HandleWithMiddlewaresGET(mux, "/api/flags/{name}", ctrl.HandleGetFlagByName, apiKeyMiddleware, loggerMiddleware)
+	httputils.HandleWithMiddlewaresPUT(mux, "/flags/{id}", ctrl.HandleUpdateFlag, auth.JWTAuthMiddleware, loggerMiddleware)
 
 	return mux
 }

@@ -2,6 +2,7 @@ package httputils
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"strings"
 )
@@ -80,4 +81,63 @@ func GetAuthorizationHeader(header http.Header, authType string) (string, bool) 
 // IsHTTPSuccess determines whether or not a given status code is 2xx
 func IsHTTPSuccess(statusCode int) bool {
 	return statusCode >= http.StatusOK && statusCode < http.StatusMultipleChoices
+}
+
+// HandleWithMiddlewares wraps a handler with given middlewares and registers it for given pattern and HTTP method.
+func HandleWithMiddlewares(
+	mux *http.ServeMux,
+	method string,
+	pattern string,
+	handlerFunc HandlerFunc,
+	middlewares ...func(HandlerFunc) HandlerFunc,
+) {
+	wrappedHandlerFunc := handlerFunc
+	for _, middleware := range middlewares {
+		wrappedHandlerFunc = middleware(wrappedHandlerFunc)
+	}
+
+	mux.Handle(
+		fmt.Sprintf("%s %s", method, pattern),
+		ResponseWriterMiddleware(wrappedHandlerFunc),
+	)
+}
+
+// HandleWithMiddlewaresGET wraps a handler with given middlewares and registers it for given pattern and HTTP GET method.
+func HandleWithMiddlewaresGET(
+	mux *http.ServeMux,
+	pattern string,
+	handler HandlerFunc,
+	middlewares ...func(HandlerFunc) HandlerFunc,
+) {
+	HandleWithMiddlewares(mux, http.MethodGet, pattern, handler, middlewares...)
+}
+
+// HandleWithMiddlewaresPOST wraps a handler with given middlewares and registers it for given pattern and HTTP POST method.
+func HandleWithMiddlewaresPOST(
+	mux *http.ServeMux,
+	pattern string,
+	handler HandlerFunc,
+	middlewares ...func(HandlerFunc) HandlerFunc,
+) {
+	HandleWithMiddlewares(mux, http.MethodPost, pattern, handler, middlewares...)
+}
+
+// HandleWithMiddlewaresPUT wraps a handler with given middlewares and registers it for given pattern and HTTP PUT method.
+func HandleWithMiddlewaresPUT(
+	mux *http.ServeMux,
+	pattern string,
+	handler HandlerFunc,
+	middlewares ...func(HandlerFunc) HandlerFunc,
+) {
+	HandleWithMiddlewares(mux, http.MethodPut, pattern, handler, middlewares...)
+}
+
+// HandleWithMiddlewaresDELETE wraps a handler with given middlewares and registers it for given pattern and HTTP DELETE method.
+func HandleWithMiddlewaresDELETE(
+	mux *http.ServeMux,
+	pattern string,
+	handler HandlerFunc,
+	middlewares ...func(HandlerFunc) HandlerFunc,
+) {
+	HandleWithMiddlewares(mux, http.MethodDelete, pattern, handler, middlewares...)
 }

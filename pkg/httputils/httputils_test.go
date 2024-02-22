@@ -29,7 +29,7 @@ func TestResponseWriterWrite(t *testing.T) {
 	data := "DEADBEEF"
 
 	w.Write([]byte(data))
-	require.Equal(t, data, string(rec.Body.Bytes()))
+	require.Equal(t, data, rec.Body.String())
 }
 
 func TestResponseWriterWriteHeader(t *testing.T) {
