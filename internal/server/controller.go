@@ -11,6 +11,7 @@ import (
 	"github.com/alvii147/flagger-api/internal/env"
 	"github.com/alvii147/flagger-api/internal/flags"
 	"github.com/alvii147/flagger-api/internal/templatesmanager"
+	"github.com/alvii147/flagger-api/pkg/httputils"
 	"github.com/alvii147/flagger-api/pkg/logging"
 	"github.com/alvii147/flagger-api/pkg/mailclient"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -18,6 +19,7 @@ import (
 
 // controller handles server API operations.
 type controller struct {
+	router       httputils.Router
 	dbPool       *pgxpool.Pool
 	logger       logging.Logger
 	mailClient   mailclient.Client
@@ -29,6 +31,8 @@ type controller struct {
 // NewController sets up the server and returns a new controller.
 func NewController() (*controller, error) {
 	config := env.GetConfig()
+
+	router := httputils.NewRouter(http.NewServeMux())
 
 	dbPool, err := database.CreatePool()
 	if err != nil {
@@ -63,6 +67,7 @@ func NewController() (*controller, error) {
 	flagsService := flags.NewService(dbPool, flagsRepository)
 
 	ctrl := &controller{
+		router:       router,
 		dbPool:       dbPool,
 		logger:       logger,
 		mailClient:   mailClient,
@@ -75,17 +80,22 @@ func NewController() (*controller, error) {
 }
 
 // Serve runs the Controller server.
-func (ctrl *controller) Serve(mux http.Handler) error {
+func (ctrl *controller) Serve() error {
 	config := env.GetConfig()
 
 	addr := fmt.Sprintf("%s:%d", config.Hostname, config.Port)
 	ctrl.logger.LogInfo("Server running on", addr)
-	err := http.ListenAndServe(addr, mux)
+	err := http.ListenAndServe(addr, ctrl.router)
 	if err != nil {
 		return fmt.Errorf("Serve failed to http.ListenAndServe %s: %w", addr, err)
 	}
 
 	return nil
+}
+
+// ServeHTTP takes in a given request and writes a response.
+func (ctrl *controller) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	ctrl.router.ServeHTTP(w, r)
 }
 
 // Close closes the Controller and its connections.

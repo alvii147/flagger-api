@@ -94,13 +94,15 @@ func TestHandleCreateUser(t *testing.T) {
 
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
-
-	mux := ctrl.Route()
-	srv := httptest.NewServer(mux)
-
 	t.Cleanup(func() {
 		err = ctrl.Close()
 		require.NoError(t, err)
+	})
+
+	ctrl.Route()
+	srv := httptest.NewServer(ctrl)
+	t.Cleanup(func() {
+		srv.Close()
 	})
 
 	httpClient := &http.Client{
@@ -321,13 +323,15 @@ func TestHandleActivateUser(t *testing.T) {
 
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
-
-	mux := ctrl.Route()
-	srv := httptest.NewServer(mux)
-
 	t.Cleanup(func() {
 		err = ctrl.Close()
 		require.NoError(t, err)
+	})
+
+	ctrl.Route()
+	srv := httptest.NewServer(ctrl)
+	t.Cleanup(func() {
+		srv.Close()
 	})
 
 	httpClient := &http.Client{
@@ -454,13 +458,15 @@ func TestHandleGetUserMe(t *testing.T) {
 
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
-
-	mux := ctrl.Route()
-	srv := httptest.NewServer(mux)
-
 	t.Cleanup(func() {
 		err = ctrl.Close()
 		require.NoError(t, err)
+	})
+
+	ctrl.Route()
+	srv := httptest.NewServer(ctrl)
+	t.Cleanup(func() {
+		srv.Close()
 	})
 
 	httpClient := &http.Client{
@@ -591,13 +597,15 @@ func TestHandleCreateJWT(t *testing.T) {
 
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
-
-	mux := ctrl.Route()
-	srv := httptest.NewServer(mux)
-
 	t.Cleanup(func() {
 		err = ctrl.Close()
 		require.NoError(t, err)
+	})
+
+	ctrl.Route()
+	srv := httptest.NewServer(ctrl)
+	t.Cleanup(func() {
+		srv.Close()
 	})
 
 	httpClient := &http.Client{
@@ -769,13 +777,15 @@ func TestHandleRefreshJWT(t *testing.T) {
 
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
-
-	mux := ctrl.Route()
-	srv := httptest.NewServer(mux)
-
 	t.Cleanup(func() {
 		err = ctrl.Close()
 		require.NoError(t, err)
+	})
+
+	ctrl.Route()
+	srv := httptest.NewServer(ctrl)
+	t.Cleanup(func() {
+		srv.Close()
 	})
 
 	httpClient := &http.Client{
@@ -881,13 +891,15 @@ func TestHandleCreateAPIKey(t *testing.T) {
 
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
-
-	mux := ctrl.Route()
-	srv := httptest.NewServer(mux)
-
 	t.Cleanup(func() {
 		err = ctrl.Close()
 		require.NoError(t, err)
+	})
+
+	ctrl.Route()
+	srv := httptest.NewServer(ctrl)
+	t.Cleanup(func() {
+		srv.Close()
 	})
 
 	httpClient := &http.Client{
@@ -1047,9 +1059,16 @@ func TestAPIKeyFlow(t *testing.T) {
 
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
+	t.Cleanup(func() {
+		err = ctrl.Close()
+		require.NoError(t, err)
+	})
 
-	mux := ctrl.Route()
-	srv := httptest.NewServer(mux)
+	ctrl.Route()
+	srv := httptest.NewServer(ctrl)
+	t.Cleanup(func() {
+		srv.Close()
+	})
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
