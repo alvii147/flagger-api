@@ -24,9 +24,9 @@ type router struct {
 }
 
 // NewRouter creates and returns a new router.
-func NewRouter(mux *http.ServeMux) *router {
+func NewRouter() *router {
 	return &router{
-		ServeMux: mux,
+		ServeMux: http.NewServeMux(),
 	}
 }
 

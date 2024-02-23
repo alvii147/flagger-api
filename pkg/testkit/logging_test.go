@@ -90,3 +90,27 @@ func TestMustParseLogMessageError(t *testing.T) {
 		})
 	}
 }
+
+func TestCreateTestLogger(t *testing.T) {
+	t.Parallel()
+
+	debugMessage := "Debug message"
+	infoMessage := "Info message"
+	warnMessage := "Warn message"
+	errorMessage := "Error message"
+
+	bufOut, bufErr, logger := testkit.CreateTestLogger()
+
+	logger.LogDebug(debugMessage)
+	logger.LogInfo(infoMessage)
+	logger.LogWarn(warnMessage)
+	logger.LogError(errorMessage)
+
+	stdout := bufOut.String()
+	stderr := bufErr.String()
+
+	require.Contains(t, stdout, debugMessage)
+	require.Contains(t, stdout, infoMessage)
+	require.Contains(t, stdout, warnMessage)
+	require.Contains(t, stderr, errorMessage)
+}

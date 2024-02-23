@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConsoleMailClient(t *testing.T) {
+func TestConsoleMailClientSend(t *testing.T) {
 	t.Parallel()
 
 	username := testkit.GenerateFakeEmail()

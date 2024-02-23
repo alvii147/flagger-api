@@ -32,7 +32,7 @@ type controller struct {
 func NewController() (*controller, error) {
 	config := env.GetConfig()
 
-	router := httputils.NewRouter(http.NewServeMux())
+	router := httputils.NewRouter()
 
 	dbPool, err := database.CreatePool()
 	if err != nil {

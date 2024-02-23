@@ -1,6 +1,7 @@
 package mailclient_test
 
 import (
+	"errors"
 	htmltemplate "html/template"
 	"testing"
 	texttemplate "text/template"
@@ -11,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestInMemMailClient(t *testing.T) {
+func TestInMemMailClientSend(t *testing.T) {
 	t.Parallel()
 
 	username := testkit.GenerateFakeEmail()
@@ -49,4 +50,29 @@ func TestInMemMailClient(t *testing.T) {
 	require.Regexp(t, `Content-Type:\s*text\/html;\s*charset\s*=\s*"utf-8"`, htmlMsg)
 	require.Regexp(t, `MIME-Version:\s*1.0`, htmlMsg)
 	require.Contains(t, htmlMsg, "Test Template Content: 42")
+}
+
+func TestInMemMailClientSetSendError(t *testing.T) {
+	t.Parallel()
+
+	username := testkit.GenerateFakeEmail()
+	client := mailclient.NewInMemClient(username)
+	client.SetSendError(errors.New("Send failed"))
+
+	mailCount := len(client.Logs)
+
+	to := testkit.GenerateFakeEmail()
+	subject := testkit.MustGenerateRandomString(12, true, true, true)
+	textTmpl, err := texttemplate.New("textTmpl").Parse("Test Template Content: {{ .Value }}")
+	require.NoError(t, err)
+	htmlTmpl, err := htmltemplate.New("htmlTmpl").Parse("<div>Test Template Content: {{ .Value }}</div>")
+	require.NoError(t, err)
+	tmplData := map[string]int{
+		"Value": 42,
+	}
+
+	err = client.Send([]string{to}, subject, textTmpl, htmlTmpl, tmplData)
+	require.Error(t, err)
+
+	require.Len(t, client.Logs, mailCount)
 }
