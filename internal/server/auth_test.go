@@ -290,10 +290,11 @@ func TestHandleCreateUser(t *testing.T) {
 			userCreatedAt := time.Now().UTC()
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
-			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
 			t.Cleanup(func() {
 				res.Body.Close()
 			})
+
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
 
 			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
 				var createUserResp api.CreateUserResponse
@@ -436,10 +437,11 @@ func TestHandleActivateUser(t *testing.T) {
 
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
-			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
 			t.Cleanup(func() {
 				res.Body.Close()
 			})
+
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
 
 			if !httputils.IsHTTPSuccess(testcase.wantStatusCode) {
 				var errResp api.ErrorResponse
@@ -563,10 +565,11 @@ func TestHandleGetUserMe(t *testing.T) {
 
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
-			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
 			t.Cleanup(func() {
 				res.Body.Close()
 			})
+
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
 
 			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
 				var getUserMeResp api.GetUserMeResponse
@@ -721,10 +724,11 @@ func TestHandleCreateJWT(t *testing.T) {
 
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
-			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
 			t.Cleanup(func() {
 				res.Body.Close()
 			})
+
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
 
 			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
 				var createTokenResp api.CreateTokenResponse
@@ -851,10 +855,11 @@ func TestHandleRefreshJWT(t *testing.T) {
 
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
-			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
 			t.Cleanup(func() {
 				res.Body.Close()
 			})
+
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
 
 			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
 				var refreshTokenResp api.RefreshTokenResponse
@@ -1025,10 +1030,11 @@ func TestHandleCreateAPIKey(t *testing.T) {
 			apiKeyCreatedAt := time.Now().UTC()
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
-			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
 			t.Cleanup(func() {
 				res.Body.Close()
 			})
+
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
 
 			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
 				var createAPIKeyResp api.CreateAPIKeyResponse
@@ -1042,6 +1048,128 @@ func TestHandleCreateAPIKey(t *testing.T) {
 					Time:  expirationDate,
 					Valid: testcase.wantExpirationDate,
 				}, createAPIKeyResp.ExpiresAt)
+			} else {
+				var errResp api.ErrorResponse
+				err = json.NewDecoder(res.Body).Decode(&errResp)
+				require.NoError(t, err)
+
+				require.Equal(t, testcase.wantErrCode, errResp.Code)
+				require.Equal(t, testcase.wantErrDetail, errResp.Detail)
+			}
+		})
+	}
+}
+
+func TestHandleListAPIKeys(t *testing.T) {
+	t.Parallel()
+
+	ctrl, err := server.NewController()
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err = ctrl.Close()
+		require.NoError(t, err)
+	})
+
+	ctrl.Route()
+	srv := httptest.NewServer(ctrl)
+	t.Cleanup(func() {
+		srv.Close()
+	})
+
+	httpClient := &http.Client{
+		Timeout: 60 * time.Second,
+	}
+
+	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = true
+	})
+	activeUserAccessJWT, _ := testkitinternal.MustCreateUserAuthJWTs(activeUser.UUID)
+	activeUserAPIKey, activeUserRawAPIKey := testkitinternal.MustCreateUserAPIKey(t, activeUser.UUID, nil)
+
+	inactiveUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = false
+	})
+	inactiveUserAccessJWT, _ := testkitinternal.MustCreateUserAuthJWTs(inactiveUser.UUID)
+	testkitinternal.MustCreateUserAPIKey(t, inactiveUser.UUID, nil)
+
+	testcases := []struct {
+		name                  string
+		headers               map[string]string
+		wantStatusCode        int
+		wantAPIKeysInResponse bool
+		wantErrCode           string
+		wantErrDetail         string
+	}{
+		{
+			name: "List API keys for active user",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", activeUserAccessJWT),
+			},
+			wantStatusCode:        http.StatusOK,
+			wantAPIKeysInResponse: true,
+			wantErrCode:           "",
+			wantErrDetail:         "",
+		},
+		{
+			name: "List API keys for inactive user",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", inactiveUserAccessJWT),
+			},
+			wantStatusCode:        http.StatusOK,
+			wantAPIKeysInResponse: false,
+			wantErrCode:           api.ErrCodeResourceNotFound,
+			wantErrDetail:         api.ErrDetailUserNotFound,
+		},
+		{
+			name:                  "List API keys without authentication",
+			headers:               map[string]string{},
+			wantStatusCode:        http.StatusUnauthorized,
+			wantAPIKeysInResponse: false,
+			wantErrCode:           api.ErrCodeMissingCredentials,
+			wantErrDetail:         api.ErrDetailMissingCredentials,
+		},
+	}
+
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			req, err := http.NewRequest(
+				http.MethodGet,
+				srv.URL+"/auth/api-keys",
+				http.NoBody,
+			)
+			require.NoError(t, err)
+
+			for key, value := range testcase.headers {
+				req.Header.Add(key, value)
+			}
+
+			res, err := httpClient.Do(req)
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				res.Body.Close()
+			})
+
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+
+			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
+				var listAPIKeysResp api.ListAPIKeysResponse
+				err = json.NewDecoder(res.Body).Decode(&listAPIKeysResp)
+				require.NoError(t, err)
+
+				if testcase.wantAPIKeysInResponse {
+					require.Len(t, listAPIKeysResp.Keys, 1)
+					require.Equal(t, activeUserAPIKey.ID, listAPIKeysResp.Keys[0].ID)
+					require.Equal(t, activeUser.UUID, listAPIKeysResp.Keys[0].UserUUID)
+					require.True(t, strings.HasPrefix(activeUserRawAPIKey, listAPIKeysResp.Keys[0].Prefix))
+					require.Equal(t, activeUserAPIKey.Name, listAPIKeysResp.Keys[0].Name)
+					testkit.RequireTimeAlmostEqual(t, activeUserAPIKey.CreatedAt, listAPIKeysResp.Keys[0].CreatedAt)
+					testkit.RequirePGTimestampAlmostEqual(t, activeUserAPIKey.ExpiresAt, listAPIKeysResp.Keys[0].ExpiresAt)
+				} else {
+					require.Len(t, listAPIKeysResp.Keys, 0)
+				}
 			} else {
 				var errResp api.ErrorResponse
 				err = json.NewDecoder(res.Body).Decode(&errResp)
