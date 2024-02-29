@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/alvii147/flagger-api/internal/database"
+	"github.com/alvii147/flagger-api/internal/env"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
 )
@@ -12,7 +13,14 @@ import (
 // RequireCreateDatabasePool creates and returns a new database connection pool.
 // It also asserts no error is returned and declares clean up function to close the pool.
 func RequireCreateDatabasePool(t *testing.T) *pgxpool.Pool {
-	dbPool, err := database.CreatePool()
+	config := env.NewConfig()
+	dbPool, err := database.CreatePool(
+		config.PostgresHostname,
+		config.PostgresPort,
+		config.PostgresUsername,
+		config.PostgresPassword,
+		config.PostgresDatabaseName,
+	)
 	require.NoError(t, err)
 
 	t.Cleanup(func() {

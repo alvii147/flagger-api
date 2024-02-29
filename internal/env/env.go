@@ -30,18 +30,6 @@ type Config struct {
 	MailClientType          string `env:"FLAGGERAPI_MAIL_CLIENT_TYPE"`
 }
 
-var config *Config
-
-// GetConfig returns currently set Config.
-func GetConfig() *Config {
-	return config
-}
-
-// SetConfig sets current Config.
-func SetConfig(c *Config) {
-	config = c
-}
-
 // defaultConfig returns config struct with default values if the field is not provided.
 func defaultConfig() *Config {
 	return &Config{

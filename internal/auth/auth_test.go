@@ -1,13 +1,12 @@
 package auth_test
 
 import (
-	"os"
+	"fmt"
 	"regexp"
 	"testing"
 	"time"
 
 	"github.com/alvii147/flagger-api/internal/auth"
-	"github.com/alvii147/flagger-api/internal/env"
 	"github.com/alvii147/flagger-api/internal/templatesmanager"
 	"github.com/alvii147/flagger-api/internal/testkitinternal"
 	"github.com/alvii147/flagger-api/pkg/api"
@@ -20,25 +19,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-func TestMain(m *testing.M) {
-	defer testkitinternal.TeardownTests()
-	testkitinternal.SetupTests()
-	code := m.Run()
-	os.Exit(code)
-}
-
 func TestHashPassword(t *testing.T) {
 	t.Parallel()
 
 	password := testkit.GenerateFakePassword()
 
-	hashedPassword, err := auth.HashPassword(password)
+	hashedPassword, err := auth.HashPassword(password, 14)
 	require.NoError(t, err)
 
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
 	require.NoError(t, err)
 
-	hashedPassword, err = auth.HashPassword(testkit.GenerateFakePassword())
+	hashedPassword, err = auth.HashPassword(testkit.GenerateFakePassword(), 14)
 	require.NoError(t, err)
 
 	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
@@ -48,7 +40,8 @@ func TestHashPassword(t *testing.T) {
 func TestCreateAuthJWTSuccess(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
+	accessLifetime := time.Minute
+	refreshLifetime := time.Hour
 
 	testcases := []struct {
 		name         string
@@ -58,12 +51,12 @@ func TestCreateAuthJWTSuccess(t *testing.T) {
 		{
 			name:         "Access token",
 			tokenType:    auth.JWTTypeAccess,
-			wantLifetime: time.Duration(config.AuthAccessLifetime * int64(time.Minute)),
+			wantLifetime: time.Minute,
 		},
 		{
 			name:         "Refresh token",
 			tokenType:    auth.JWTTypeRefresh,
-			wantLifetime: time.Duration(config.AuthRefreshLifetime * int64(time.Minute)),
+			wantLifetime: time.Hour,
 		},
 	}
 
@@ -74,12 +67,18 @@ func TestCreateAuthJWTSuccess(t *testing.T) {
 
 			userUUID := uuid.NewString()
 
-			token, err := auth.CreateAuthJWT(userUUID, testcase.tokenType)
+			token, err := auth.CreateAuthJWT(
+				userUUID,
+				testcase.tokenType,
+				"deadbeef",
+				accessLifetime,
+				refreshLifetime,
+			)
 			require.NoError(t, err)
 
 			claims := &api.AuthJWTClaims{}
 			parsedToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
-				return []byte(config.SecretKey), nil
+				return []byte("deadbeef"), nil
 			})
 			require.NoError(t, err)
 
@@ -97,20 +96,49 @@ func TestCreateAuthJWTSuccess(t *testing.T) {
 func TestCreateAuthJWTInvalidType(t *testing.T) {
 	t.Parallel()
 
-	_, err := auth.CreateAuthJWT(uuid.NewString(), auth.JWTType("invalidtype"))
+	_, err := auth.CreateAuthJWT(
+		uuid.NewString(),
+		auth.JWTType("invalidtype"),
+		"deadbeef",
+		time.Minute,
+		time.Hour,
+	)
 	require.Error(t, err)
 }
 
 func TestValidateAuthJWT(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
 	userUUID := uuid.NewString()
 	jti := uuid.NewString()
 	now := time.Now().UTC()
 	oneDayAgo := now.Add(-24 * time.Hour)
+	validSecretKey := "deadbeef"
 
-	validAccessToken, validRefreshToken := testkitinternal.MustCreateUserAuthJWTs(userUUID)
+	validAccessToken, err := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		&api.AuthJWTClaims{
+			Subject:   userUUID,
+			TokenType: string(auth.JWTTypeAccess),
+			IssuedAt:  utils.JSONTimeStamp(now),
+			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Hour)),
+			JWTID:     jti,
+		},
+	).SignedString([]byte(validSecretKey))
+	require.NoError(t, err)
+
+	validRefreshToken, err := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		&api.AuthJWTClaims{
+			Subject:   userUUID,
+			TokenType: string(auth.JWTTypeRefresh),
+			IssuedAt:  utils.JSONTimeStamp(now),
+			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Hour)),
+			JWTID:     jti,
+		},
+	).SignedString([]byte(validSecretKey))
+	require.NoError(t, err)
+
 	tokenOfInvalidType, err := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		&api.AuthJWTClaims{
@@ -120,7 +148,7 @@ func TestValidateAuthJWT(t *testing.T) {
 			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Hour)),
 			JWTID:     jti,
 		},
-	).SignedString([]byte(config.SecretKey))
+	).SignedString([]byte(validSecretKey))
 	require.NoError(t, err)
 
 	expiredToken, err := jwt.NewWithClaims(
@@ -132,7 +160,7 @@ func TestValidateAuthJWT(t *testing.T) {
 			ExpiresAt: utils.JSONTimeStamp(oneDayAgo.Add(time.Hour)),
 			JWTID:     jti,
 		},
-	).SignedString([]byte(config.SecretKey))
+	).SignedString([]byte(validSecretKey))
 	require.NoError(t, err)
 
 	tokenWithInvalidClaim, err := jwt.NewWithClaims(
@@ -141,49 +169,63 @@ func TestValidateAuthJWT(t *testing.T) {
 			InvalidClaim string `json:"invalid_claim"`
 			jwt.StandardClaims
 		}{},
-	).SignedString([]byte(config.SecretKey))
+	).SignedString([]byte(validSecretKey))
 	require.NoError(t, err)
 
 	testcases := []struct {
 		name      string
 		token     string
 		tokenType auth.JWTType
+		secretKey string
 		wantOk    bool
 	}{
 		{
 			name:      "Valid access token",
 			token:     validAccessToken,
 			tokenType: auth.JWTTypeAccess,
+			secretKey: validSecretKey,
 			wantOk:    true,
 		},
 		{
 			name:      "Valid refresh token",
 			token:     validRefreshToken,
 			tokenType: auth.JWTTypeRefresh,
+			secretKey: validSecretKey,
 			wantOk:    true,
+		},
+		{
+			name:      "Invalid secret key",
+			token:     validAccessToken,
+			tokenType: auth.JWTTypeAccess,
+			secretKey: "invalidsecretkey",
+			wantOk:    false,
 		},
 		{
 			name:      "Token of invalid type",
 			token:     tokenOfInvalidType,
 			tokenType: auth.JWTTypeAccess,
+			secretKey: validSecretKey,
 			wantOk:    false,
 		},
 		{
 			name:      "Invalid token",
 			token:     "ed0730889507fdb8549acfcd31548ee5",
 			tokenType: auth.JWTTypeAccess,
+			secretKey: validSecretKey,
 			wantOk:    false,
 		},
 		{
 			name:      "Expired token",
 			token:     expiredToken,
 			tokenType: auth.JWTTypeAccess,
+			secretKey: validSecretKey,
 			wantOk:    false,
 		},
 		{
 			name:      "Token with invalid claim",
 			token:     tokenWithInvalidClaim,
 			tokenType: auth.JWTTypeAccess,
+			secretKey: validSecretKey,
 			wantOk:    false,
 		},
 	}
@@ -193,7 +235,7 @@ func TestValidateAuthJWT(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
-			claims, ok := auth.ValidateAuthJWT(testcase.token, testcase.tokenType)
+			claims, ok := auth.ValidateAuthJWT(testcase.token, testcase.tokenType, testcase.secretKey)
 			require.Equal(t, testcase.wantOk, ok)
 
 			if testcase.wantOk {
@@ -207,14 +249,15 @@ func TestValidateAuthJWT(t *testing.T) {
 func TestCreateActivationJWTSuccess(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
 	userUUID := uuid.NewString()
-	token, err := auth.CreateActivationJWT(userUUID)
+	secretKey := "deadbeef"
+	lifetime := time.Hour
+	token, err := auth.CreateActivationJWT(userUUID, secretKey, lifetime)
 	require.NoError(t, err)
 
 	claims := &api.ActivationJWTClaims{}
 	parsedToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(config.SecretKey), nil
+		return []byte(secretKey), nil
 	})
 	require.NoError(t, err)
 
@@ -224,17 +267,17 @@ func TestCreateActivationJWTSuccess(t *testing.T) {
 	require.Equal(t, string(auth.JWTTypeActivation), claims.TokenType)
 
 	testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), time.Time(claims.IssuedAt))
-	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.ActivationLifetime*int64(time.Minute))), time.Time(claims.ExpiresAt))
+	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(lifetime), time.Time(claims.ExpiresAt))
 }
 
 func TestValidateActivationJWT(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
 	userUUID := uuid.NewString()
 	jti := uuid.NewString()
 	now := time.Now().UTC()
 	oneDayAgo := now.Add(-24 * time.Hour)
+	validSecretKey := "deadbeef"
 
 	validToken, err := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
@@ -245,7 +288,7 @@ func TestValidateActivationJWT(t *testing.T) {
 			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Hour)),
 			JWTID:     jti,
 		},
-	).SignedString([]byte(config.SecretKey))
+	).SignedString([]byte(validSecretKey))
 	require.NoError(t, err)
 
 	tokenOfInvalidType, err := jwt.NewWithClaims(
@@ -257,7 +300,7 @@ func TestValidateActivationJWT(t *testing.T) {
 			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Hour)),
 			JWTID:     jti,
 		},
-	).SignedString([]byte(config.SecretKey))
+	).SignedString([]byte(validSecretKey))
 	require.NoError(t, err)
 
 	expiredToken, err := jwt.NewWithClaims(
@@ -269,7 +312,7 @@ func TestValidateActivationJWT(t *testing.T) {
 			ExpiresAt: utils.JSONTimeStamp(oneDayAgo.Add(time.Hour)),
 			JWTID:     jti,
 		},
-	).SignedString([]byte(config.SecretKey))
+	).SignedString([]byte(validSecretKey))
 	require.NoError(t, err)
 
 	tokenWithInvalidClaim, err := jwt.NewWithClaims(
@@ -278,38 +321,50 @@ func TestValidateActivationJWT(t *testing.T) {
 			InvalidClaim string `json:"invalid_claim"`
 			jwt.StandardClaims
 		}{},
-	).SignedString([]byte(config.SecretKey))
+	).SignedString([]byte(validSecretKey))
 	require.NoError(t, err)
 
 	testcases := []struct {
-		name   string
-		token  string
-		wantOk bool
+		name      string
+		token     string
+		secretKey string
+		wantOk    bool
 	}{
 		{
-			name:   "Valid token of correct type",
-			token:  validToken,
-			wantOk: true,
+			name:      "Valid token of correct type",
+			token:     validToken,
+			secretKey: validSecretKey,
+			wantOk:    true,
 		},
 		{
-			name:   "Token of incorrect type",
-			token:  tokenOfInvalidType,
-			wantOk: false,
+			name:      "Token of incorrect type",
+			token:     tokenOfInvalidType,
+			secretKey: validSecretKey,
+			wantOk:    false,
 		},
 		{
-			name:   "Invalid token",
-			token:  "ed0730889507fdb8549acfcd31548ee5",
-			wantOk: false,
+			name:      "Invalid token",
+			token:     "ed0730889507fdb8549acfcd31548ee5",
+			secretKey: validSecretKey,
+			wantOk:    false,
 		},
 		{
-			name:   "Expired token",
-			token:  expiredToken,
-			wantOk: false,
+			name:      "Expired token",
+			token:     expiredToken,
+			secretKey: validSecretKey,
+			wantOk:    false,
 		},
 		{
-			name:   "Token with invalid claim",
-			token:  tokenWithInvalidClaim,
-			wantOk: false,
+			name:      "Token with invalid claim",
+			token:     tokenWithInvalidClaim,
+			secretKey: validSecretKey,
+			wantOk:    false,
+		},
+		{
+			name:      "Incorrect secret key",
+			token:     validToken,
+			secretKey: "incorrectsecretkey",
+			wantOk:    false,
 		},
 	}
 
@@ -318,7 +373,7 @@ func TestValidateActivationJWT(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
-			claims, ok := auth.ValidateActivationJWT(testcase.token)
+			claims, ok := auth.ValidateActivationJWT(testcase.token, testcase.secretKey)
 			require.Equal(t, testcase.wantOk, ok)
 
 			if testcase.wantOk {
@@ -345,7 +400,19 @@ func TestSendActivationMail(t *testing.T) {
 	mailClient := mailclient.NewInMemClient("support@flagger.com")
 	mailCount := len(mailClient.Logs)
 	tmplManager := templatesmanager.NewManager()
-	err := auth.SendActivationMail(user, mailClient, tmplManager)
+	frontendBaseURL := "http://localhost:3000"
+	frontendActivationRoute := "/signup/activate/%s"
+	secretKey := "deadbeef"
+	lifetime := time.Hour
+	err := auth.SendActivationMail(
+		user,
+		mailClient,
+		tmplManager,
+		frontendBaseURL,
+		frontendActivationRoute,
+		secretKey,
+		lifetime,
+	)
 	require.NoError(t, err)
 	require.Len(t, mailClient.Logs, mailCount+1)
 
@@ -357,12 +424,34 @@ func TestSendActivationMail(t *testing.T) {
 	mailMessage := string(lastMail.Message)
 	require.Contains(t, mailMessage, "Welcome to Flagger!")
 	require.Contains(t, mailMessage, "Flagger - Activate Your Account")
+
+	pattern := fmt.Sprintf(frontendBaseURL+frontendActivationRoute, `(\S+)`)
+	r, err := regexp.Compile(pattern)
+	require.NoError(t, err)
+
+	matches := r.FindStringSubmatch(mailMessage)
+	require.Len(t, matches, 2)
+
+	activationToken := matches[1]
+	claims := &api.ActivationJWTClaims{}
+	parsedToken, err := jwt.ParseWithClaims(activationToken, claims, func(t *jwt.Token) (interface{}, error) {
+		return []byte(secretKey), nil
+	})
+	require.NoError(t, err)
+
+	require.NotNil(t, parsedToken)
+	require.True(t, parsedToken.Valid)
+	require.Equal(t, user.UUID, claims.Subject)
+	require.Equal(t, string(auth.JWTTypeActivation), claims.TokenType)
+
+	testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), time.Time(claims.IssuedAt))
+	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(lifetime), time.Time(claims.ExpiresAt))
 }
 
 func TestCreateAPIKey(t *testing.T) {
 	t.Parallel()
 
-	prefix, rawKey, hashedKey, err := auth.CreateAPIKey()
+	prefix, rawKey, hashedKey, err := auth.CreateAPIKey(14)
 	require.NoError(t, err)
 
 	err = bcrypt.CompareHashAndPassword([]byte(hashedKey), []byte(rawKey))

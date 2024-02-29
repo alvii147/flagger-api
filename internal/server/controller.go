@@ -19,6 +19,7 @@ import (
 
 // controller handles server API operations.
 type controller struct {
+	config       *env.Config
 	router       httputils.Router
 	dbPool       *pgxpool.Pool
 	logger       logging.Logger
@@ -30,11 +31,15 @@ type controller struct {
 
 // NewController sets up the server and returns a new controller.
 func NewController() (*controller, error) {
-	config := env.GetConfig()
-
+	config := env.NewConfig()
 	router := httputils.NewRouter()
-
-	dbPool, err := database.CreatePool()
+	dbPool, err := database.CreatePool(
+		config.PostgresHostname,
+		config.PostgresPort,
+		config.PostgresUsername,
+		config.PostgresPassword,
+		config.PostgresDatabaseName,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("NewController failed to database.GetPool: %w", err)
 	}
@@ -61,12 +66,20 @@ func NewController() (*controller, error) {
 	tmplManager := templatesmanager.NewManager()
 
 	authRepository := auth.NewRepository()
-	authService := auth.NewService(dbPool, logger, mailClient, tmplManager, authRepository)
+	authService := auth.NewService(
+		config,
+		dbPool,
+		logger,
+		mailClient,
+		tmplManager,
+		authRepository,
+	)
 
 	flagsRepository := flags.NewRepository()
 	flagsService := flags.NewService(dbPool, flagsRepository)
 
 	ctrl := &controller{
+		config:       config,
 		router:       router,
 		dbPool:       dbPool,
 		logger:       logger,
@@ -81,9 +94,7 @@ func NewController() (*controller, error) {
 
 // Serve runs the Controller server.
 func (ctrl *controller) Serve() error {
-	config := env.GetConfig()
-
-	addr := fmt.Sprintf("%s:%d", config.Hostname, config.Port)
+	addr := fmt.Sprintf("%s:%d", ctrl.config.Hostname, ctrl.config.Port)
 	ctrl.logger.LogInfo("Server running on", addr)
 	err := http.ListenAndServe(addr, ctrl.router)
 	if err != nil {

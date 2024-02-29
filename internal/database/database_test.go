@@ -1,67 +1,62 @@
 package database_test
 
 import (
-	"os"
 	"regexp"
 	"strconv"
 	"testing"
 
 	"github.com/alvii147/flagger-api/internal/database"
 	"github.com/alvii147/flagger-api/internal/env"
-	"github.com/alvii147/flagger-api/internal/testkitinternal"
 	"github.com/stretchr/testify/require"
 )
 
-func TestMain(m *testing.M) {
-	defer testkitinternal.TeardownTests()
-	testkitinternal.SetupTests()
-	code := m.Run()
-	os.Exit(code)
-}
-
-func TestBuildConnString(t *testing.T) {
+func TestCreateConnString(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-	connString := database.BuildConnString()
+	hostname := "localhost"
+	port := 5432
+	username := "user"
+	password := "pass"
+	databaseName := "db"
+	connString := database.CreateConnString(
+		hostname,
+		port,
+		username,
+		password,
+		databaseName,
+	)
 
 	re := regexp.MustCompile(`^(\S+):\/\/(\S+):(\S+)@(\S+):(\d+)/(\S+)$`)
 	match := re.FindStringSubmatch(connString)
 
 	require.Len(t, match, 7)
 
-	protocol, username, password, hostname, port, dbname := match[1], match[2], match[3], match[4], match[5], match[6]
-
-	require.Equal(t, "postgres", protocol)
-	require.Equal(t, config.PostgresUsername, username)
-	require.Equal(t, config.PostgresPassword, password)
-	require.Equal(t, config.PostgresHostname, hostname)
-	require.Equal(t, strconv.Itoa(config.PostgresPort), port)
-	require.Equal(t, config.PostgresDatabaseName, dbname)
+	require.Equal(t, "postgres", match[1])
+	require.Equal(t, username, match[2])
+	require.Equal(t, password, match[3])
+	require.Equal(t, hostname, match[4])
+	require.Equal(t, strconv.Itoa(port), match[5])
+	require.Equal(t, databaseName, match[6])
 }
 
 func TestCreatePoolSuccess(t *testing.T) {
 	t.Parallel()
 
-	dbPool, err := database.CreatePool()
+	config := env.NewConfig()
+	dbPool, err := database.CreatePool(
+		config.PostgresHostname,
+		config.PostgresPort,
+		config.PostgresUsername,
+		config.PostgresPassword,
+		config.PostgresDatabaseName,
+	)
 	require.NoError(t, err)
 	require.NotNil(t, dbPool)
 }
 
 func TestCreatePoolBadConnString(t *testing.T) {
-	defaultConfig := env.GetConfig()
-	t.Cleanup(func() {
-		env.SetConfig(defaultConfig)
-	})
+	t.Parallel()
 
-	config := env.NewConfig()
-	config.PostgresUsername = ""
-	config.PostgresPassword = ""
-	config.PostgresHostname = ""
-	config.PostgresPort = 0
-	config.PostgresDatabaseName = ""
-	env.SetConfig(config)
-
-	_, err := database.CreatePool()
+	_, err := database.CreatePool("", 0, "", "", "")
 	require.Error(t, err)
 }

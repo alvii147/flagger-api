@@ -5,7 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
+	"github.com/alvii147/flagger-api/internal/env"
 	"github.com/alvii147/flagger-api/internal/templatesmanager"
 	"github.com/alvii147/flagger-api/pkg/errutils"
 	"github.com/alvii147/flagger-api/pkg/logging"
@@ -31,6 +33,7 @@ type Service interface {
 
 // service implements Service.
 type service struct {
+	config      *env.Config
 	dbPool      *pgxpool.Pool
 	logger      logging.Logger
 	mailClient  mailclient.Client
@@ -40,6 +43,7 @@ type service struct {
 
 // NewService returns a new service.
 func NewService(
+	config *env.Config,
 	dbPool *pgxpool.Pool,
 	logger logging.Logger,
 	mailClient mailclient.Client,
@@ -47,6 +51,7 @@ func NewService(
 	repo Repository,
 ) *service {
 	return &service{
+		config:      config,
 		dbPool:      dbPool,
 		logger:      logger,
 		mailClient:  mailClient,
@@ -64,7 +69,7 @@ func (svc *service) CreateUser(
 	firstName string,
 	lastName string,
 ) (*User, error) {
-	hashedPasswordBytes, err := hashPassword(password)
+	hashedPasswordBytes, err := hashPassword(password, svc.config.HashingCost)
 	if err != nil {
 		return nil, fmt.Errorf("CreateUser failed to hashPassword: %w", err)
 	}
@@ -100,7 +105,15 @@ func (svc *service) CreateUser(
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		err := sendActivationMail(user, svc.mailClient, svc.tmplManager)
+		err := sendActivationMail(
+			user,
+			svc.mailClient,
+			svc.tmplManager,
+			svc.config.FrontendBaseURL,
+			svc.config.FrontendActivationRoute,
+			svc.config.SecretKey,
+			time.Duration(svc.config.ActivationLifetime*int64(time.Minute)),
+		)
 		if err != nil {
 			svc.logger.LogError("CreateUser failed to sendActivationMail:", err)
 		}
@@ -111,7 +124,7 @@ func (svc *service) CreateUser(
 
 // ActivateUser activates User from activation JWT.
 func (svc *service) ActivateUser(ctx context.Context, token string) error {
-	claims, ok := validateActivationJWT(token)
+	claims, ok := validateActivationJWT(token, svc.config.SecretKey)
 	if !ok {
 		return fmt.Errorf("ActivateUser failed to validateActivationJWT %s: %w", token, errutils.ErrInvalidToken)
 	}
@@ -196,12 +209,24 @@ func (svc *service) CreateJWT(
 		user = dummyUser
 	}
 
-	accessToken, err := createAuthJWT(user.UUID, JWTTypeAccess)
+	accessToken, err := createAuthJWT(
+		user.UUID,
+		JWTTypeAccess,
+		svc.config.SecretKey,
+		time.Duration(svc.config.AuthAccessLifetime*int64(time.Minute)),
+		time.Duration(svc.config.AuthRefreshLifetime*int64(time.Minute)),
+	)
 	if err != nil {
 		return "", "", fmt.Errorf("CreateJWT failed to createAuthJWT of type %s: %w", JWTTypeAccess, err)
 	}
 
-	refreshToken, err := createAuthJWT(user.UUID, JWTTypeRefresh)
+	refreshToken, err := createAuthJWT(
+		user.UUID,
+		JWTTypeRefresh,
+		svc.config.SecretKey,
+		time.Duration(svc.config.AuthAccessLifetime*int64(time.Minute)),
+		time.Duration(svc.config.AuthRefreshLifetime*int64(time.Minute)),
+	)
 	if err != nil {
 		return "", "", fmt.Errorf("CreateJWT failed to createAuthJWT of type %s: %w", JWTTypeRefresh, err)
 	}
@@ -215,12 +240,18 @@ func (svc *service) CreateJWT(
 
 // RefreshJWT validates refresh token and creates new access token.
 func (svc *service) RefreshJWT(ctx context.Context, token string) (string, error) {
-	claims, ok := validateAuthJWT(token, JWTTypeRefresh)
+	claims, ok := validateAuthJWT(token, JWTTypeRefresh, svc.config.SecretKey)
 	if !ok {
 		return "", fmt.Errorf("RefreshJWT failed to validateAuthJWT %s: %w", token, errutils.ErrInvalidToken)
 	}
 
-	accessToken, err := createAuthJWT(claims.Subject, JWTTypeAccess)
+	accessToken, err := createAuthJWT(
+		claims.Subject,
+		JWTTypeAccess,
+		svc.config.SecretKey,
+		time.Duration(svc.config.AuthAccessLifetime*int64(time.Minute)),
+		time.Duration(svc.config.AuthRefreshLifetime*int64(time.Minute)),
+	)
 	if err != nil {
 		return "", fmt.Errorf("RefreshJWT failed to createAuthJWT of type %s: %w", JWTTypeAccess, err)
 	}
@@ -235,7 +266,7 @@ func (svc *service) CreateAPIKey(ctx context.Context, name string, expiresAt pgt
 		return nil, "", errors.New("CreateAPIKey failed to ctx.Value user UUID from ctx")
 	}
 
-	prefix, rawKey, hashedKey, err := createAPIKey()
+	prefix, rawKey, hashedKey, err := createAPIKey(svc.config.HashingCost)
 	if err != nil {
 		return nil, "", fmt.Errorf("CreateAPIKey failed to generateAPIKey: %w", err)
 	}

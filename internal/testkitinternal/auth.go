@@ -19,8 +19,7 @@ import (
 
 // MustHashPassword hashes a given password and panics on error
 func MustHashPassword(password string) string {
-	config := env.GetConfig()
-
+	config := env.NewConfig()
 	hashedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte(password), config.HashingCost)
 	if err != nil {
 		panic(fmt.Sprintf("MustHashPassword failed to bcrypt.GenerateFromPassword: %v", err))
@@ -63,8 +62,7 @@ func MustCreateUser(t *testing.T, modifier func(u *auth.User)) (*auth.User, stri
 
 // MustCreateUserAuthJWTs creates and returns access and refresh JWTs for User and panics on error.
 func MustCreateUserAuthJWTs(userUUID string) (string, string) {
-	config := env.GetConfig()
-
+	config := env.NewConfig()
 	now := time.Now().UTC()
 	accessToken, err := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,

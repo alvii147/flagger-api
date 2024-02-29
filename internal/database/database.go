@@ -4,28 +4,44 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/alvii147/flagger-api/internal/env"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// BuildConnString constructs PostgreSQL connection string from Config.
-func BuildConnString() string {
-	config := env.GetConfig()
+// CreateConnString constructs PostgreSQL connection string from Config.
+func CreateConnString(
+	hostname string,
+	port int,
+	username string,
+	password string,
+	databaseName string,
+) string {
 	connString := fmt.Sprintf(
 		"postgres://%s:%s@%s:%d/%s",
-		config.PostgresUsername,
-		config.PostgresPassword,
-		config.PostgresHostname,
-		config.PostgresPort,
-		config.PostgresDatabaseName,
+		username,
+		password,
+		hostname,
+		port,
+		databaseName,
 	)
 
 	return connString
 }
 
 // CreatePool creates and returns a new database connection pool.
-func CreatePool() (*pgxpool.Pool, error) {
-	connString := BuildConnString()
+func CreatePool(
+	hostname string,
+	port int,
+	username string,
+	password string,
+	databaseName string,
+) (*pgxpool.Pool, error) {
+	connString := CreateConnString(
+		hostname,
+		port,
+		username,
+		password,
+		databaseName,
+	)
 
 	dbPool, err := pgxpool.New(context.Background(), connString)
 	if err != nil {

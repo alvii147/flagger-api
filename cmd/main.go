@@ -6,14 +6,10 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/alvii147/flagger-api/internal/env"
 	"github.com/alvii147/flagger-api/internal/server"
 )
 
 func main() {
-	config := env.NewConfig()
-	env.SetConfig(config)
-
 	ctrl, err := server.NewController()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to controller.NewController: %v\n", err)

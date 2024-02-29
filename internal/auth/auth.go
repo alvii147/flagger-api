@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alvii147/flagger-api/internal/env"
 	"github.com/alvii147/flagger-api/internal/templatesmanager"
 	"github.com/alvii147/flagger-api/pkg/api"
 	"github.com/alvii147/flagger-api/pkg/mailclient"
@@ -57,11 +56,9 @@ type AuthContextKey string
 // AuthContextKeyUserUUID is the key in context where User UUID is stored after authentication.
 const AuthContextKeyUserUUID AuthContextKey = "userUUID"
 
-// hashPassword hashes given password.
-func hashPassword(password string) (string, error) {
-	config := env.GetConfig()
-
-	hashedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte(password), config.HashingCost)
+// hashPassword hashes given password using a given hashing cost.
+func hashPassword(password string, hashingCost int) (string, error) {
+	hashedPasswordBytes, err := bcrypt.GenerateFromPassword([]byte(password), hashingCost)
 	if err != nil {
 		return "", fmt.Errorf("hashPassword failed to bcrypt.GenerateFromPassword: %w", err)
 	}
@@ -72,15 +69,19 @@ func hashPassword(password string) (string, error) {
 
 // createAuthJWT creates JWTs for User authentication of given type.
 // Returns error when token type is not access or refresh.
-func createAuthJWT(userUUID string, tokenType JWTType) (string, error) {
-	config := env.GetConfig()
-
+func createAuthJWT(
+	userUUID string,
+	tokenType JWTType,
+	secretKey string,
+	accessLifetime time.Duration,
+	refreshLifetime time.Duration,
+) (string, error) {
 	var lifetime time.Duration
 	switch tokenType {
 	case JWTTypeAccess:
-		lifetime = time.Duration(config.AuthAccessLifetime * int64(time.Minute))
+		lifetime = accessLifetime
 	case JWTTypeRefresh:
-		lifetime = time.Duration(config.AuthRefreshLifetime * int64(time.Minute))
+		lifetime = refreshLifetime
 	default:
 		return "", fmt.Errorf("createAuthJWT received invalid JWT type %s, expected JWT type %s or %s", tokenType, JWTTypeAccess, JWTTypeRefresh)
 	}
@@ -96,7 +97,7 @@ func createAuthJWT(userUUID string, tokenType JWTType) (string, error) {
 			JWTID:     uuid.NewString(),
 		},
 	)
-	signedToken, err := token.SignedString([]byte(config.SecretKey))
+	signedToken, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return "", fmt.Errorf("createAuthJWTWithType failed to token.SignedString for user.UUID %s of token type %s: %w", userUUID, tokenType, err)
 	}
@@ -107,14 +108,12 @@ func createAuthJWT(userUUID string, tokenType JWTType) (string, error) {
 // validateAuthJWT validates JWT for User authentication,
 // checks that the JWT is not expired,
 // and returns parsed JWT claims.
-func validateAuthJWT(token string, tokenType JWTType) (*api.AuthJWTClaims, bool) {
-	config := env.GetConfig()
-
+func validateAuthJWT(token string, tokenType JWTType, secretKey string) (*api.AuthJWTClaims, bool) {
 	claims := &api.AuthJWTClaims{}
 	ok := true
 
 	parsedToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(config.SecretKey), nil
+		return []byte(secretKey), nil
 	})
 
 	if err != nil {
@@ -141,9 +140,7 @@ func validateAuthJWT(token string, tokenType JWTType) (*api.AuthJWTClaims, bool)
 }
 
 // createActivationJWTWithType creates JWT for User activation.
-func createActivationJWT(userUUID string) (string, error) {
-	config := env.GetConfig()
-
+func createActivationJWT(userUUID string, secretKey string, lifetime time.Duration) (string, error) {
 	now := time.Now().UTC()
 	token := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
@@ -151,11 +148,11 @@ func createActivationJWT(userUUID string) (string, error) {
 			Subject:   userUUID,
 			TokenType: string(JWTTypeActivation),
 			IssuedAt:  utils.JSONTimeStamp(now),
-			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.ActivationLifetime * int64(time.Minute)))),
+			ExpiresAt: utils.JSONTimeStamp(now.Add(lifetime)),
 			JWTID:     uuid.NewString(),
 		},
 	)
-	signedToken, err := token.SignedString([]byte(config.SecretKey))
+	signedToken, err := token.SignedString([]byte(secretKey))
 	if err != nil {
 		return "", fmt.Errorf("createActivationJWT failed to token.SignedString for user.UUID %s of token type %s: %w", userUUID, JWTTypeActivation, err)
 	}
@@ -166,14 +163,12 @@ func createActivationJWT(userUUID string) (string, error) {
 // validateActivationJWT validates JWT for User activation using secret key,
 // checks that the JWT is not expired,
 // and returns parsed JWT claims.
-func validateActivationJWT(token string) (*api.ActivationJWTClaims, bool) {
-	config := env.GetConfig()
-
+func validateActivationJWT(token string, secretKey string) (*api.ActivationJWTClaims, bool) {
 	claims := &api.ActivationJWTClaims{}
 	ok := true
 
 	parsedToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
-		return []byte(config.SecretKey), nil
+		return []byte(secretKey), nil
 	})
 
 	if err != nil {
@@ -204,15 +199,17 @@ func sendActivationMail(
 	user *User,
 	mailClient mailclient.Client,
 	templatesManager templatesmanager.Manager,
+	frontendBaseURL string,
+	frontendActivationRoute string,
+	secretKey string,
+	jwtLifetime time.Duration,
 ) error {
-	config := env.GetConfig()
-
-	activationToken, err := createActivationJWT(user.UUID)
+	activationToken, err := createActivationJWT(user.UUID, secretKey, jwtLifetime)
 	if err != nil {
 		return fmt.Errorf("sendActivationMail failed to createActivationJWT: %w", err)
 	}
 
-	activationURL := fmt.Sprintf(config.FrontendBaseURL+config.FrontendActivationRoute, activationToken)
+	activationURL := fmt.Sprintf(frontendBaseURL+frontendActivationRoute, activationToken)
 	tmplData := templatesmanager.ActivationEmailTemplateData{
 		RecipientEmail: user.Email,
 		ActivationURL:  activationURL,
@@ -232,7 +229,7 @@ func sendActivationMail(
 }
 
 // createAPIKey creates prefix, secret, and hashed key for API key.
-func createAPIKey() (string, string, string, error) {
+func createAPIKey(hashingCost int) (string, string, string, error) {
 	prefix, err := utils.GenerateRandomString(8, true, true, true)
 	if err != nil {
 		return "", "", "", fmt.Errorf("createAPIKey failed to utils.GenerateRandomString: %w", err)
@@ -247,7 +244,7 @@ func createAPIKey() (string, string, string, error) {
 
 	rawKey := fmt.Sprintf("%s.%s", prefix, secret)
 
-	hashedKey, err := hashPassword(rawKey)
+	hashedKey, err := hashPassword(rawKey, hashingCost)
 	if err != nil {
 		return "", "", "", fmt.Errorf("createAPIKey failed to hashPassword: %w", err)
 	}

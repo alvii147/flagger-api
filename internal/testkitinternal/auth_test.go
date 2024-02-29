@@ -76,8 +76,7 @@ func TestMustCreateUserDuplicateEmail(t *testing.T) {
 func TestMustCreateUserAuthJWTs(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
+	config := env.NewConfig()
 	userUUID := uuid.NewString()
 	accessToken, refreshToken := testkitinternal.MustCreateUserAuthJWTs(userUUID)
 
@@ -117,7 +116,7 @@ func TestMustCreateUserAPIKeySuccess(t *testing.T) {
 		u.IsActive = true
 	})
 
-	name := "deadbeef"
+	name := "MyAPIKey"
 	apiKey, rawKey := testkitinternal.MustCreateUserAPIKey(t, user.UUID, func(k *auth.APIKey) {
 		k.Name = name
 	})

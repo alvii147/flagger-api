@@ -13,7 +13,7 @@ import (
 // JWTAuthMiddleware parses and validates JWT from authorization header.
 // If authentication fails, it returns 401.
 // If authentication is successful, it sets User UUID in context.
-func JWTAuthMiddleware(next httputils.HandlerFunc) httputils.HandlerFunc {
+func JWTAuthMiddleware(next httputils.HandlerFunc, secretKey string) httputils.HandlerFunc {
 	return httputils.HandlerFunc(func(w *httputils.ResponseWriter, r *http.Request) {
 		token, ok := httputils.GetAuthorizationHeader(r.Header, "Bearer")
 		if !ok {
@@ -27,7 +27,7 @@ func JWTAuthMiddleware(next httputils.HandlerFunc) httputils.HandlerFunc {
 			return
 		}
 
-		claims, ok := validateAuthJWT(token, JWTTypeAccess)
+		claims, ok := validateAuthJWT(token, JWTTypeAccess, secretKey)
 		if !ok {
 			w.WriteJSON(
 				api.ErrorResponse{

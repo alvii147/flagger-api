@@ -26,13 +26,24 @@ import (
 func TestJWTAuthMiddleware(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
 	userUUID := uuid.NewString()
 	jti := uuid.NewString()
 	now := time.Now().UTC()
 	oneDayAgo := now.Add(-24 * time.Hour)
+	secretKey := "deadbeef"
 
-	validAccessToken, _ := testkitinternal.MustCreateUserAuthJWTs(userUUID)
+	validAccessToken, err := jwt.NewWithClaims(
+		jwt.SigningMethodHS256,
+		&api.AuthJWTClaims{
+			Subject:   userUUID,
+			TokenType: string(auth.JWTTypeAccess),
+			IssuedAt:  utils.JSONTimeStamp(now),
+			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Hour)),
+			JWTID:     jti,
+		},
+	).SignedString([]byte(secretKey))
+	require.NoError(t, err)
+
 	tokenOfInvalidType, err := jwt.NewWithClaims(
 		jwt.SigningMethodHS256,
 		&api.AuthJWTClaims{
@@ -42,7 +53,7 @@ func TestJWTAuthMiddleware(t *testing.T) {
 			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Hour)),
 			JWTID:     jti,
 		},
-	).SignedString([]byte(config.SecretKey))
+	).SignedString([]byte(secretKey))
 	require.NoError(t, err)
 
 	expiredToken, err := jwt.NewWithClaims(
@@ -54,7 +65,7 @@ func TestJWTAuthMiddleware(t *testing.T) {
 			ExpiresAt: utils.JSONTimeStamp(oneDayAgo.Add(time.Hour)),
 			JWTID:     jti,
 		},
-	).SignedString([]byte(config.SecretKey))
+	).SignedString([]byte(secretKey))
 	require.NoError(t, err)
 
 	tokenWithInvalidClaim, err := jwt.NewWithClaims(
@@ -63,7 +74,7 @@ func TestJWTAuthMiddleware(t *testing.T) {
 			InvalidClaim string `json:"invalid_claim"`
 			jwt.StandardClaims
 		}{},
-	).SignedString([]byte(config.SecretKey))
+	).SignedString([]byte(secretKey))
 	require.NoError(t, err)
 
 	validResponse := map[string]interface{}{
@@ -171,7 +182,7 @@ func TestJWTAuthMiddleware(t *testing.T) {
 				r.Header.Set("Authorization", testcase.authHeader)
 			}
 
-			auth.JWTAuthMiddleware(next)(w, r)
+			auth.JWTAuthMiddleware(next, secretKey)(w, r)
 
 			result := rec.Result()
 			t.Cleanup(func() {
@@ -212,12 +223,13 @@ func TestAPIKeyAuthMiddleware(t *testing.T) {
 		u.IsActive = true
 	})
 
+	config := env.NewConfig()
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
 	_, _, logger := testkit.CreateTestLogger()
 	mailClient := mailclient.NewInMemClient("support@flagger.com")
 	tmplManager := templatesmanager.NewManager()
 	repo := auth.NewRepository()
-	svc := auth.NewService(dbPool, logger, mailClient, tmplManager, repo)
+	svc := auth.NewService(config, dbPool, logger, mailClient, tmplManager, repo)
 
 	_, validAPIKey := testkitinternal.MustCreateUserAPIKey(t, user.UUID, nil)
 

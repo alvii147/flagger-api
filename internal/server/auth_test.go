@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -25,13 +24,6 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
 )
-
-func TestMain(m *testing.M) {
-	defer testkitinternal.TeardownTests()
-	testkitinternal.SetupTests()
-	code := m.Run()
-	os.Exit(code)
-}
 
 func TestGetAPIKeyIDParam(t *testing.T) {
 	t.Parallel()
@@ -320,8 +312,7 @@ func TestHandleCreateUser(t *testing.T) {
 func TestHandleActivateUser(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
+	config := env.NewConfig()
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -596,8 +587,7 @@ func TestHandleGetUserMe(t *testing.T) {
 func TestHandleCreateJWT(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
+	config := env.NewConfig()
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -777,8 +767,7 @@ func TestHandleCreateJWT(t *testing.T) {
 func TestHandleRefreshJWT(t *testing.T) {
 	t.Parallel()
 
-	config := env.GetConfig()
-
+	config := env.NewConfig()
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {
