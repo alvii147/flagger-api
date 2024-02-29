@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -470,13 +469,13 @@ func TestHandleGetUserMe(t *testing.T) {
 		u.IsActive = true
 	})
 	activeUserAccessJWT, _ := testkitinternal.MustCreateUserAuthJWTs(activeUser.UUID)
-	_, activeUserAPIKey := testkitinternal.MustCreateUserAPIKey(t, activeUser.UUID, nil)
+	_, activeUserRawAPIKey := testkitinternal.MustCreateUserAPIKey(t, activeUser.UUID, nil)
 
 	inactiveUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = false
 	})
 	inactiveUserAccessJWT, _ := testkitinternal.MustCreateUserAuthJWTs(inactiveUser.UUID)
-	_, inactiveUserAPIKey := testkitinternal.MustCreateUserAPIKey(t, inactiveUser.UUID, nil)
+	_, inactiveUserRawAPIKey := testkitinternal.MustCreateUserAPIKey(t, inactiveUser.UUID, nil)
 
 	testcases := []struct {
 		name           string
@@ -502,7 +501,7 @@ func TestHandleGetUserMe(t *testing.T) {
 			name: "Get active user using API key",
 			path: "/api/auth/users/me",
 			headers: map[string]string{
-				"Authorization": fmt.Sprintf("X-API-Key %s", activeUserAPIKey),
+				"Authorization": fmt.Sprintf("X-API-Key %s", activeUserRawAPIKey),
 			},
 			user:           activeUser,
 			wantStatusCode: http.StatusOK,
@@ -524,7 +523,7 @@ func TestHandleGetUserMe(t *testing.T) {
 			name: "Get inactive user using API key",
 			path: "/api/auth/users/me",
 			headers: map[string]string{
-				"Authorization": fmt.Sprintf("X-API-Key %s", inactiveUserAPIKey),
+				"Authorization": fmt.Sprintf("X-API-Key %s", inactiveUserRawAPIKey),
 			},
 			user:           inactiveUser,
 			wantStatusCode: http.StatusUnauthorized,
@@ -1171,7 +1170,7 @@ func TestHandleListAPIKeys(t *testing.T) {
 	}
 }
 
-func TestAPIKeyFlow(t *testing.T) {
+func TestHandleDeleteAPIKey(t *testing.T) {
 	t.Parallel()
 
 	ctrl, err := server.NewController()
@@ -1191,109 +1190,98 @@ func TestAPIKeyFlow(t *testing.T) {
 		Timeout: 60 * time.Second,
 	}
 
-	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
 	})
-	accessToken, _ := testkitinternal.MustCreateUserAuthJWTs(user.UUID)
+	activeUserAccessJWT, _ := testkitinternal.MustCreateUserAuthJWTs(activeUser.UUID)
+	activeUserAPIKey1, _ := testkitinternal.MustCreateUserAPIKey(t, activeUser.UUID, func(k *auth.APIKey) {
+		k.Name = "MyAPIKey1"
+	})
+	activeUserAPIKey2, _ := testkitinternal.MustCreateUserAPIKey(t, activeUser.UUID, func(k *auth.APIKey) {
+		k.Name = "MyAPIKey2"
+	})
 
-	apiKeyCreatedAt := time.Now().UTC()
-	apiKeyExpiresAt := time.Now().UTC().AddDate(0, 1, 0)
-	reqBody := fmt.Sprintf(`
+	inactiveUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = false
+	})
+	inactiveUserAccessJWT, _ := testkitinternal.MustCreateUserAuthJWTs(inactiveUser.UUID)
+	inactiveUserAPIKey, _ := testkitinternal.MustCreateUserAPIKey(t, inactiveUser.UUID, nil)
+
+	testcases := []struct {
+		name           string
+		path           string
+		headers        map[string]string
+		wantStatusCode int
+		wantErrCode    string
+		wantErrDetail  string
+	}{
 		{
-			"name": "%s",
-			"expires_at": "%s"
-		}
-	`, "MyAPIKey", apiKeyExpiresAt.Format(time.RFC3339))
-	req, err := http.NewRequest(
-		http.MethodPost,
-		srv.URL+"/auth/api-keys",
-		bytes.NewReader([]byte(reqBody)),
-	)
-	require.NoError(t, err)
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-
-	res, err := httpClient.Do(req)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusCreated, res.StatusCode)
-
-	defer res.Body.Close()
-	var createAPIKeyResp api.CreateAPIKeyResponse
-	err = json.NewDecoder(res.Body).Decode(&createAPIKeyResp)
-	require.NoError(t, err)
-
-	require.Equal(t, user.UUID, createAPIKeyResp.UserUUID)
-	require.Equal(t, "MyAPIKey", createAPIKeyResp.Name)
-	testkit.RequireTimeAlmostEqual(t, apiKeyCreatedAt, createAPIKeyResp.CreatedAt)
-	testkit.RequirePGTimestampAlmostEqual(
-		t,
-		pgtype.Timestamp{
-			Time:  apiKeyExpiresAt,
-			Valid: true,
+			name: "Delete API key for active user",
+			path: fmt.Sprintf("/auth/api-keys/%d", activeUserAPIKey1.ID),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", activeUserAccessJWT),
+			},
+			wantStatusCode: http.StatusNoContent,
+			wantErrCode:    "",
+			wantErrDetail:  "",
 		},
-		createAPIKeyResp.ExpiresAt,
-	)
-
-	req, err = http.NewRequest(
-		http.MethodGet,
-		srv.URL+"/auth/api-keys",
-		nil,
-	)
-	require.NoError(t, err)
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-
-	res, err = httpClient.Do(req)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, res.StatusCode)
-
-	defer res.Body.Close()
-	var listAPIKeysResp api.ListAPIKeysResponse
-	err = json.NewDecoder(res.Body).Decode(&listAPIKeysResp)
-	require.NoError(t, err)
-
-	require.Len(t, listAPIKeysResp.Keys, 1)
-	require.True(t, strings.HasPrefix(createAPIKeyResp.RawKey, listAPIKeysResp.Keys[0].Prefix))
-	require.Equal(t, "MyAPIKey", listAPIKeysResp.Keys[0].Name)
-	testkit.RequireTimeAlmostEqual(t, apiKeyCreatedAt, listAPIKeysResp.Keys[0].CreatedAt)
-	testkit.RequirePGTimestampAlmostEqual(
-		t,
-		pgtype.Timestamp{
-			Time:  apiKeyExpiresAt,
-			Valid: true,
+		{
+			name: "Delete API key for inactive user",
+			path: fmt.Sprintf("/auth/api-keys/%d", inactiveUserAPIKey.ID),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", inactiveUserAccessJWT),
+			},
+			wantStatusCode: http.StatusNotFound,
+			wantErrCode:    api.ErrCodeResourceNotFound,
+			wantErrDetail:  api.ErrDetailAPIKeyNotFound,
 		},
-		listAPIKeysResp.Keys[0].ExpiresAt,
-	)
+		{
+			name: "Delete API key for another user",
+			path: fmt.Sprintf("/auth/api-keys/%d", activeUserAPIKey2.ID),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", inactiveUserAccessJWT),
+			},
+			wantStatusCode: http.StatusNotFound,
+			wantErrCode:    api.ErrCodeResourceNotFound,
+			wantErrDetail:  api.ErrDetailAPIKeyNotFound,
+		},
+		{
+			name:           "Delete API key without authentication",
+			path:           fmt.Sprintf("/auth/api-keys/%d", activeUserAPIKey2.ID),
+			headers:        map[string]string{},
+			wantStatusCode: http.StatusUnauthorized,
+			wantErrCode:    api.ErrCodeMissingCredentials,
+			wantErrDetail:  api.ErrDetailMissingCredentials,
+		},
+	}
 
-	req, err = http.NewRequest(
-		http.MethodGet,
-		srv.URL+"/api/auth/users/me",
-		nil,
-	)
-	require.NoError(t, err)
-	req.Header.Set("Authorization", fmt.Sprintf("X-API-Key %s", createAPIKeyResp.RawKey))
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
 
-	res, err = httpClient.Do(req)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, res.StatusCode)
+			req, err := http.NewRequest(http.MethodDelete, srv.URL+testcase.path, http.NoBody)
+			require.NoError(t, err)
 
-	defer res.Body.Close()
-	var getUserMeResp api.GetUserMeResponse
-	err = json.NewDecoder(res.Body).Decode(&getUserMeResp)
-	require.NoError(t, err)
+			for key, value := range testcase.headers {
+				req.Header.Add(key, value)
+			}
 
-	require.Equal(t, user.Email, getUserMeResp.Email)
-	require.Equal(t, user.FirstName, getUserMeResp.FirstName)
-	require.Equal(t, user.LastName, getUserMeResp.LastName)
-	require.Equal(t, user.CreatedAt, getUserMeResp.CreatedAt)
+			res, err := httpClient.Do(req)
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				res.Body.Close()
+			})
 
-	req, err = http.NewRequest(
-		http.MethodDelete,
-		srv.URL+"/auth/api-keys/"+strconv.Itoa(createAPIKeyResp.ID),
-		bytes.NewReader([]byte(reqBody)),
-	)
-	require.NoError(t, err)
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+			if !httputils.IsHTTPSuccess(testcase.wantStatusCode) {
+				var errResp api.ErrorResponse
+				err = json.NewDecoder(res.Body).Decode(&errResp)
+				require.NoError(t, err)
 
-	res, err = httpClient.Do(req)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusNoContent, res.StatusCode)
+				require.Equal(t, testcase.wantErrCode, errResp.Code)
+				require.Equal(t, testcase.wantErrDetail, errResp.Detail)
+			}
+		})
+	}
 }
