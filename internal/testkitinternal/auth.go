@@ -72,7 +72,7 @@ func MustCreateUserAuthJWTs(userUUID string) (string, string) {
 			Subject:   userUUID,
 			TokenType: string(auth.JWTTypeAccess),
 			IssuedAt:  utils.JSONTimeStamp(now),
-			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.AuthAccessLifetime))),
+			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.AuthAccessLifetime * int64(time.Minute)))),
 			JWTID:     uuid.NewString(),
 		},
 	).SignedString([]byte(config.SecretKey))
@@ -86,7 +86,7 @@ func MustCreateUserAuthJWTs(userUUID string) (string, string) {
 			Subject:   userUUID,
 			TokenType: string(auth.JWTTypeRefresh),
 			IssuedAt:  utils.JSONTimeStamp(now),
-			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.AuthRefreshLifetime))),
+			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.AuthRefreshLifetime * int64(time.Minute)))),
 			JWTID:     uuid.NewString(),
 		},
 	).SignedString([]byte(config.SecretKey))

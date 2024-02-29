@@ -350,7 +350,7 @@ func TestHandleActivateUser(t *testing.T) {
 			Subject:   activeUser.UUID,
 			TokenType: string(auth.JWTTypeActivation),
 			IssuedAt:  utils.JSONTimeStamp(now),
-			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.ActivationLifetime))),
+			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.ActivationLifetime * int64(time.Minute)))),
 			JWTID:     uuid.NewString(),
 		},
 	).SignedString([]byte(config.SecretKey))
@@ -366,7 +366,7 @@ func TestHandleActivateUser(t *testing.T) {
 			Subject:   inactiveUser.UUID,
 			TokenType: string(auth.JWTTypeActivation),
 			IssuedAt:  utils.JSONTimeStamp(now),
-			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.ActivationLifetime))),
+			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.ActivationLifetime * int64(time.Minute)))),
 			JWTID:     uuid.NewString(),
 		},
 	).SignedString([]byte(config.SecretKey))
@@ -747,7 +747,7 @@ func TestHandleCreateJWT(t *testing.T) {
 				require.Equal(t, string(auth.JWTTypeAccess), accessClaims.TokenType)
 
 				testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), time.Time(accessClaims.IssuedAt))
-				testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthAccessLifetime)), time.Time(accessClaims.ExpiresAt))
+				testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthAccessLifetime*int64(time.Minute))), time.Time(accessClaims.ExpiresAt))
 
 				refreshClaims := &api.AuthJWTClaims{}
 				parsedRefreshToken, err := jwt.ParseWithClaims(createTokenResp.Refresh, refreshClaims, func(t *jwt.Token) (interface{}, error) {
@@ -761,7 +761,7 @@ func TestHandleCreateJWT(t *testing.T) {
 				require.Equal(t, string(auth.JWTTypeRefresh), refreshClaims.TokenType)
 
 				testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), time.Time(refreshClaims.IssuedAt))
-				testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthRefreshLifetime)), time.Time(refreshClaims.ExpiresAt))
+				testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthRefreshLifetime*int64(time.Minute))), time.Time(refreshClaims.ExpiresAt))
 			} else {
 				var errResp api.ErrorResponse
 				err = json.NewDecoder(res.Body).Decode(&errResp)
@@ -878,7 +878,7 @@ func TestHandleRefreshJWT(t *testing.T) {
 				require.Equal(t, string(auth.JWTTypeAccess), claims.TokenType)
 
 				testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), time.Time(claims.IssuedAt))
-				testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthAccessLifetime)), time.Time(claims.ExpiresAt))
+				testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthAccessLifetime*int64(time.Minute))), time.Time(claims.ExpiresAt))
 			} else {
 				var errResp api.ErrorResponse
 				err = json.NewDecoder(res.Body).Decode(&errResp)

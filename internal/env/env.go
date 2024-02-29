@@ -4,7 +4,6 @@ import (
 	"os"
 	"reflect"
 	"strconv"
-	"time"
 )
 
 // Config represents config variables for the server.
@@ -52,9 +51,9 @@ func defaultConfig() *Config {
 		HashingCost:             14,
 		FrontendBaseURL:         "http://localhost:3000",
 		FrontendActivationRoute: "/signup/activate/%s",
-		AuthAccessLifetime:      int64(5 * time.Minute),
-		AuthRefreshLifetime:     int64(30 * 24 * time.Hour),
-		ActivationLifetime:      int64(30 * 24 * time.Hour),
+		AuthAccessLifetime:      30,
+		AuthRefreshLifetime:     30 * 24 * 60,
+		ActivationLifetime:      30 * 24 * 60,
 		PostgresHostname:        "localhost",
 		PostgresPort:            5432,
 		PostgresUsername:        "postgres",

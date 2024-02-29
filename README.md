@@ -38,9 +38,9 @@ Variable | Default | Description | Required for Local Development?
 `FLAGGERAPI_HASHING_COST` | `14` | Hashing cost for password/key hashing | No
 `FLAGGERAPI_FRONTEND_BASE_URL` | `http://localhost:3000` | Frontend URL, used to generate links in emails | No
 `FLAGGERAPI_FRONTEND_ACTIVATION_ROUTE` | `/signup/activate/%s` | Frontend activation route, used to generate activation link in emails | No
-`FLAGGERAPI_AUTH_ACCESS_LIFETIME` | `300` | Lifetime of access tokens in seconds | No
-`FLAGGERAPI_AUTH_REFRESH_LIFETIME` | `2592000` | Lifetime of refresh tokens in seconds | No
-`FLAGGERAPI_ACTIVATION_LIFETIME` | `2592000` | Lifetime of activation tokens in seconds | No
+`FLAGGERAPI_AUTH_ACCESS_LIFETIME` | `30` | Lifetime of access tokens in minutes | No
+`FLAGGERAPI_AUTH_REFRESH_LIFETIME` | `43200` | Lifetime of refresh tokens in minutes | No
+`FLAGGERAPI_ACTIVATION_LIFETIME` | `43200` | Lifetime of activation tokens in minutes | No
 `FLAGGERAPI_POSTGRES_HOSTNAME` | `localhost` | PostgreSQL hostname | No
 `FLAGGERAPI_POSTGRES_PORT` | `5432` | PostgreSQL port number | No
 `FLAGGERAPI_POSTGRES_USERNAME` | `postgres` | PostgreSQL username | **Yes**

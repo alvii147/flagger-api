@@ -58,12 +58,12 @@ func TestCreateAuthJWTSuccess(t *testing.T) {
 		{
 			name:         "Access token",
 			tokenType:    auth.JWTTypeAccess,
-			wantLifetime: time.Duration(config.AuthAccessLifetime),
+			wantLifetime: time.Duration(config.AuthAccessLifetime * int64(time.Minute)),
 		},
 		{
 			name:         "Refresh token",
 			tokenType:    auth.JWTTypeRefresh,
-			wantLifetime: time.Duration(config.AuthRefreshLifetime),
+			wantLifetime: time.Duration(config.AuthRefreshLifetime * int64(time.Minute)),
 		},
 	}
 
@@ -224,7 +224,7 @@ func TestCreateActivationJWTSuccess(t *testing.T) {
 	require.Equal(t, string(auth.JWTTypeActivation), claims.TokenType)
 
 	testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), time.Time(claims.IssuedAt))
-	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.ActivationLifetime)), time.Time(claims.ExpiresAt))
+	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.ActivationLifetime*int64(time.Minute))), time.Time(claims.ExpiresAt))
 }
 
 func TestValidateActivationJWT(t *testing.T) {

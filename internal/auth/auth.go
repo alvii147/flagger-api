@@ -78,9 +78,9 @@ func createAuthJWT(userUUID string, tokenType JWTType) (string, error) {
 	var lifetime time.Duration
 	switch tokenType {
 	case JWTTypeAccess:
-		lifetime = time.Duration(config.AuthAccessLifetime)
+		lifetime = time.Duration(config.AuthAccessLifetime * int64(time.Minute))
 	case JWTTypeRefresh:
-		lifetime = time.Duration(config.AuthRefreshLifetime)
+		lifetime = time.Duration(config.AuthRefreshLifetime * int64(time.Minute))
 	default:
 		return "", fmt.Errorf("createAuthJWT received invalid JWT type %s, expected JWT type %s or %s", tokenType, JWTTypeAccess, JWTTypeRefresh)
 	}
@@ -151,7 +151,7 @@ func createActivationJWT(userUUID string) (string, error) {
 			Subject:   userUUID,
 			TokenType: string(JWTTypeActivation),
 			IssuedAt:  utils.JSONTimeStamp(now),
-			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.ActivationLifetime))),
+			ExpiresAt: utils.JSONTimeStamp(now.Add(time.Duration(config.ActivationLifetime * int64(time.Minute)))),
 			JWTID:     uuid.NewString(),
 		},
 	)

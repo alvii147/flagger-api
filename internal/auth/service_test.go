@@ -359,7 +359,7 @@ func TestServiceCreateJWTSuccess(t *testing.T) {
 	require.Equal(t, string(auth.JWTTypeAccess), accessClaims.TokenType)
 
 	testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), time.Time(accessClaims.IssuedAt))
-	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthAccessLifetime)), time.Time(accessClaims.ExpiresAt))
+	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthAccessLifetime*int64(time.Minute))), time.Time(accessClaims.ExpiresAt))
 
 	refreshClaims := &api.AuthJWTClaims{}
 	parsedRefreshToken, err := jwt.ParseWithClaims(refreshToken, refreshClaims, func(t *jwt.Token) (interface{}, error) {
@@ -373,7 +373,7 @@ func TestServiceCreateJWTSuccess(t *testing.T) {
 	require.Equal(t, string(auth.JWTTypeRefresh), refreshClaims.TokenType)
 
 	testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), time.Time(refreshClaims.IssuedAt))
-	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthRefreshLifetime)), time.Time(refreshClaims.ExpiresAt))
+	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthRefreshLifetime*int64(time.Minute))), time.Time(refreshClaims.ExpiresAt))
 }
 
 func TestServiceCreateJWTError(t *testing.T) {
@@ -451,7 +451,7 @@ func TestServiceRefreshJWTSuccess(t *testing.T) {
 	require.Equal(t, string(auth.JWTTypeAccess), claims.TokenType)
 
 	testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), time.Time(claims.IssuedAt))
-	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthAccessLifetime)), time.Time(claims.ExpiresAt))
+	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthAccessLifetime*int64(time.Minute))), time.Time(claims.ExpiresAt))
 }
 
 func TestServiceRefreshJWTError(t *testing.T) {
