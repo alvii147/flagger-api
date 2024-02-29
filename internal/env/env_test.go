@@ -10,20 +10,24 @@ import (
 func TestConfigString(t *testing.T) {
 	t.Setenv("FLAGGERAPI_HOSTNAME", "127.0.0.1")
 
-	config := env.NewConfig()
+	config, err := env.NewConfig()
+	require.NoError(t, err)
+
 	require.Equal(t, "127.0.0.1", config.Hostname)
 }
 
 func TestConfigInt(t *testing.T) {
 	t.Setenv("FLAGGERAPI_PORT", "3000")
 
-	config := env.NewConfig()
+	config, err := env.NewConfig()
+	require.NoError(t, err)
+
 	require.Equal(t, 3000, config.Port)
 }
 
-func TestConfigInvalidValueUsesDefault(t *testing.T) {
+func TestConfigInvalidIntError(t *testing.T) {
 	t.Setenv("FLAGGERAPI_PORT", "B33F")
 
-	config := env.NewConfig()
-	require.Equal(t, 8080, config.Port)
+	_, err := env.NewConfig()
+	require.Error(t, err)
 }

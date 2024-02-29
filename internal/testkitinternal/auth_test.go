@@ -76,7 +76,9 @@ func TestMustCreateUserDuplicateEmail(t *testing.T) {
 func TestMustCreateUserAuthJWTs(t *testing.T) {
 	t.Parallel()
 
-	config := env.NewConfig()
+	config, err := env.NewConfig()
+	require.NoError(t, err)
+
 	userUUID := uuid.NewString()
 	accessToken, refreshToken := testkitinternal.MustCreateUserAuthJWTs(userUUID)
 

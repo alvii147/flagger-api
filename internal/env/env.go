@@ -1,6 +1,7 @@
 package env
 
 import (
+	"fmt"
 	"os"
 	"reflect"
 	"strconv"
@@ -30,35 +31,10 @@ type Config struct {
 	MailClientType          string `env:"FLAGGERAPI_MAIL_CLIENT_TYPE"`
 }
 
-// defaultConfig returns config struct with default values if the field is not provided.
-func defaultConfig() *Config {
-	return &Config{
-		Hostname:                "localhost",
-		Port:                    8080,
-		SecretKey:               "DEADBEEF",
-		HashingCost:             14,
-		FrontendBaseURL:         "http://localhost:3000",
-		FrontendActivationRoute: "/signup/activate/%s",
-		AuthAccessLifetime:      30,
-		AuthRefreshLifetime:     30 * 24 * 60,
-		ActivationLifetime:      30 * 24 * 60,
-		PostgresHostname:        "localhost",
-		PostgresPort:            5432,
-		PostgresUsername:        "postgres",
-		PostgresPassword:        "postgres",
-		PostgresDatabaseName:    "flaggerdb",
-		SMTPHostname:            "smtp.gmail.com",
-		SMTPPort:                587,
-		SMTPUsername:            "",
-		SMTPPassword:            "",
-		MailClientType:          "console",
-	}
-}
-
-// NewConfig reads environment variables and returns a new config,
-// overridden by environment variables where possible.
-func NewConfig() *Config {
-	config := defaultConfig()
+// NewConfig reads environment variables and returns a new config
+// and returns error when an environment variable is not found.
+func NewConfig() (*Config, error) {
+	config := &Config{}
 
 	fields := reflect.TypeOf(config)
 	values := reflect.ValueOf(config)
@@ -72,39 +48,39 @@ func NewConfig() *Config {
 			continue
 		}
 
-		overrideValue, ok := os.LookupEnv(envKey)
+		envValue, ok := os.LookupEnv(envKey)
 		if !ok {
-			continue
+			return nil, fmt.Errorf("NewConfig failed, missing environment variable %s", envKey)
 		}
 
 		switch field.Type.Kind() {
 		case reflect.String:
-			value.SetString(overrideValue)
+			value.SetString(envValue)
 		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-			overrideInt, err := strconv.ParseInt(overrideValue, 10, 64)
+			envInt, err := strconv.ParseInt(envValue, 10, 64)
 			if err != nil {
-				continue
+				return nil, fmt.Errorf("NewConfig failed to strconv.ParseInt %s: %w", envValue, err)
 			}
 
-			value.SetInt(overrideInt)
+			value.SetInt(envInt)
 		case reflect.Float32, reflect.Float64:
-			overrideFloat, err := strconv.ParseFloat(overrideValue, 64)
+			envFloat, err := strconv.ParseFloat(envValue, 64)
 			if err != nil {
-				continue
+				return nil, fmt.Errorf("NewConfig failed to strconv.ParseFloat %s: %w", envValue, err)
 			}
 
-			value.SetFloat(overrideFloat)
+			value.SetFloat(envFloat)
 		case reflect.Bool:
-			overrideBool, err := strconv.ParseBool(overrideValue)
+			envBool, err := strconv.ParseBool(envValue)
 			if err != nil {
-				continue
+				return nil, fmt.Errorf("NewConfig failed to strconv.ParseBool %s: %w", envValue, err)
 			}
 
-			value.SetBool(overrideBool)
+			value.SetBool(envBool)
 		default:
 			continue
 		}
 	}
 
-	return config
+	return config, nil
 }

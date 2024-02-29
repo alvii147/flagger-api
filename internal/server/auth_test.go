@@ -311,7 +311,9 @@ func TestHandleCreateUser(t *testing.T) {
 func TestHandleActivateUser(t *testing.T) {
 	t.Parallel()
 
-	config := env.NewConfig()
+	config, err := env.NewConfig()
+	require.NoError(t, err)
+
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -586,7 +588,9 @@ func TestHandleGetUserMe(t *testing.T) {
 func TestHandleCreateJWT(t *testing.T) {
 	t.Parallel()
 
-	config := env.NewConfig()
+	config, err := env.NewConfig()
+	require.NoError(t, err)
+
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {
@@ -766,7 +770,9 @@ func TestHandleCreateJWT(t *testing.T) {
 func TestHandleRefreshJWT(t *testing.T) {
 	t.Parallel()
 
-	config := env.NewConfig()
+	config, err := env.NewConfig()
+	require.NoError(t, err)
+
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {

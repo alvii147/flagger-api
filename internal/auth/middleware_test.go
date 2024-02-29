@@ -223,7 +223,9 @@ func TestAPIKeyAuthMiddleware(t *testing.T) {
 		u.IsActive = true
 	})
 
-	config := env.NewConfig()
+	config, err := env.NewConfig()
+	require.NoError(t, err)
+
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
 	_, _, logger := testkit.CreateTestLogger()
 	mailClient := mailclient.NewInMemClient("support@flagger.com")

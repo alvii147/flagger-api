@@ -31,7 +31,11 @@ type controller struct {
 
 // NewController sets up the server and returns a new controller.
 func NewController() (*controller, error) {
-	config := env.NewConfig()
+	config, err := env.NewConfig()
+	if err != nil {
+		return nil, fmt.Errorf("NewController failed to env.NewConfig: %w", err)
+	}
+
 	router := httputils.NewRouter()
 	dbPool, err := database.CreatePool(
 		config.PostgresHostname,

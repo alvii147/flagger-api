@@ -42,7 +42,9 @@ func TestCreateConnString(t *testing.T) {
 func TestCreatePoolSuccess(t *testing.T) {
 	t.Parallel()
 
-	config := env.NewConfig()
+	config, err := env.NewConfig()
+	require.NoError(t, err)
+
 	dbPool, err := database.CreatePool(
 		config.PostgresHostname,
 		config.PostgresPort,

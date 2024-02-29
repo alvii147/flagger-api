@@ -13,7 +13,9 @@ import (
 // RequireCreateDatabasePool creates and returns a new database connection pool.
 // It also asserts no error is returned and declares clean up function to close the pool.
 func RequireCreateDatabasePool(t *testing.T) *pgxpool.Pool {
-	config := env.NewConfig()
+	config, err := env.NewConfig()
+	require.NoError(t, err)
+
 	dbPool, err := database.CreatePool(
 		config.PostgresHostname,
 		config.PostgresPort,
