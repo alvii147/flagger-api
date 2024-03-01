@@ -23,6 +23,14 @@ ifeq ($(VERBOSE), 1)
 	TEST_OPTS:=$(TEST_OPTS) -v
 endif
 
+.PHONY: docker-up
+docker-up:
+	docker compose up -d
+
+.PHONY: docker-down
+docker-down:
+	docker compose down
+
 .PHONY: test
 test:
 	$(DOCKER_EXEC_PSQL) --command="CREATE DATABASE test_$(FLAGGERAPI_POSTGRES_DATABASE_NAME);"

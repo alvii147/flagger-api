@@ -14,59 +14,51 @@
 
 ## Installation
 
-### :one: [Install PostgreSQL](https://www.postgresql.org/download/):
+### :one: [Install Docker](https://docs.docker.com/engine/install/)
 
-Installation process may depend on OS, so **it's best to follow a YouTube tutorial that demonstrates the installation steps.**
+### :two: Run Flagger API
 
-### :two: Create Database
-
-Run the following make command to create a new database:
+Run the following make command run the flagger API containers:
 
 ```bash
-make create-db
+make docker-up
 ```
 
-### :three: Environment Variables
+You should see the following containers up and running:
 
-From the following list of available environment variables, set the ones that are required for local development, as well as any other variables you'd like to customize:
+![Docker Containers](docs/img/containers.png)
 
-Variable | Default | Description | Required for Local Development?
+The `flagger-api-server` container's logs should indicate which port it is running on:
+
+```
+[I] 2006/01/02 15:04:05 /app/internal/server/controller.go:102: Server running on 0.0.0.0:8080
+```
+
+## Environment Variables
+
+Following is a list of available overridable environment variables:
+
+Variable | Default | Description
 --- | --- | --- | ---
-`FLAGGERAPI_HOSTNAME` | `localhost` | Serving hostname of API | No
-`FLAGGERAPI_PORT` | `8080` | Serving port number of API | No
-`FLAGGERAPI_SECRET_KEY` | `DEADBEEF` | Secret key used for token encryption | No
-`FLAGGERAPI_HASHING_COST` | `14` | Hashing cost for password/key hashing | No
-`FLAGGERAPI_FRONTEND_BASE_URL` | `http://localhost:3000` | Frontend URL, used to generate links in emails | No
-`FLAGGERAPI_FRONTEND_ACTIVATION_ROUTE` | `/signup/activate/%s` | Frontend activation route, used to generate activation link in emails | No
-`FLAGGERAPI_AUTH_ACCESS_LIFETIME` | `30` | Lifetime of access tokens in minutes | No
-`FLAGGERAPI_AUTH_REFRESH_LIFETIME` | `43200` | Lifetime of refresh tokens in minutes | No
-`FLAGGERAPI_ACTIVATION_LIFETIME` | `43200` | Lifetime of activation tokens in minutes | No
-`FLAGGERAPI_POSTGRES_HOSTNAME` | `localhost` | PostgreSQL hostname | No
-`FLAGGERAPI_POSTGRES_PORT` | `5432` | PostgreSQL port number | No
-`FLAGGERAPI_POSTGRES_USERNAME` | `postgres` | PostgreSQL username | **Yes**
-`FLAGGERAPI_POSTGRES_PASSWORD` | `postgres` | PostgreSQL password | **Yes**
-`FLAGGERAPI_POSTGRES_DATABASE_NAME` | `flaggerdb` | PostgreSQL database name | No
-`FLAGGERAPI_SMTP_HOSTNAME` | `smtp.gmail.com` | SMTP hostname | No
-`FLAGGERAPI_SMTP_PORT` | `587` | SMTP port number | No
-`FLAGGERAPI_SMTP_USERNAME` | `<empty>` | SMTP email username | **Only if `FLAGGERAPI_MAIL_CLIENT_TYPE` is `smtp`**
-`FLAGGERAPI_SMTP_PASSWORD` | `<empty>` | SMTP email password | **Only if `FLAGGERAPI_MAIL_CLIENT_TYPE` is `smtp`**
-`FLAGGERAPI_MAIL_CLIENT_TYPE` | `console` | Mail client type, must be one of `smtp`, `console`, or `inmem` |  No
-
-### :four: Run Server
-
-Run the server locally using the following make command:
-
-```bash
-make server
-```
-
-You should see a server log entry indicating that the server has been launched successfully:
-
-```
-[I] 2006/01/02 15:04:05 ~/flagger-api/internal/server/controller.go:42: Server running on localhost:8080
-```
-
-To terminate the server, use `Ctrl+C`.
+`FLAGGERAPI_HOSTNAME` | `0.0.0.0` | Serving hostname of API
+`FLAGGERAPI_PORT` | `8080` | Serving port number of API
+`FLAGGERAPI_SECRET_KEY` | `DEADBEEF` | Secret key used for token encryption
+`FLAGGERAPI_HASHING_COST` | `14` | Hashing cost for password/key hashing
+`FLAGGERAPI_FRONTEND_BASE_URL` | `http://localhost:3000` | Frontend URL, used to generate links in emails
+`FLAGGERAPI_FRONTEND_ACTIVATION_ROUTE` | `/signup/activate/%s` | Frontend activation route, used to generate activation link in emails
+`FLAGGERAPI_AUTH_ACCESS_LIFETIME` | `30` | Lifetime of access tokens in minutes
+`FLAGGERAPI_AUTH_REFRESH_LIFETIME` | `43200` | Lifetime of refresh tokens in minutes
+`FLAGGERAPI_ACTIVATION_LIFETIME` | `43200` | Lifetime of activation tokens in minutes
+`FLAGGERAPI_POSTGRES_HOSTNAME` | `host.docker.internal` | PostgreSQL hostname
+`FLAGGERAPI_POSTGRES_PORT` | `5432` | PostgreSQL port number
+`FLAGGERAPI_POSTGRES_USERNAME` | `postgres` | PostgreSQL username
+`FLAGGERAPI_POSTGRES_PASSWORD` | `postgres` | PostgreSQL password
+`FLAGGERAPI_POSTGRES_DATABASE_NAME` | `flaggerdb` | PostgreSQL database name
+`FLAGGERAPI_SMTP_HOSTNAME` | `smtp.gmail.com` | SMTP hostname
+`FLAGGERAPI_SMTP_PORT` | `587` | SMTP port number
+`FLAGGERAPI_SMTP_USERNAME` | `<empty>` | SMTP email username, used if `FLAGGERAPI_MAIL_CLIENT_TYPE` is `smtp`
+`FLAGGERAPI_SMTP_PASSWORD` | `<empty>` | SMTP email password, used if `FLAGGERAPI_MAIL_CLIENT_TYPE` is `smtp`
+`FLAGGERAPI_MAIL_CLIENT_TYPE` | `console` | Mail client type, must be one of `smtp`, `console`, or `inmem`
 
 ## Testing
 
