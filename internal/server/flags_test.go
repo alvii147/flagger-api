@@ -174,11 +174,12 @@ func TestFlagFlow(t *testing.T) {
 	require.False(t, getFlagByNameResp.CreatedAt.Valid)
 	require.False(t, getFlagByNameResp.UpdatedAt.Valid)
 
-	reqBody := `
+	flagName := "my-flag"
+	reqBody := fmt.Sprintf(`
 		{
-			"name": "my-flag"
+			"name": "%s"
 		}
-	`
+	`, flagName)
 	req, err = http.NewRequest(
 		http.MethodPost,
 		srv.URL+"/flags",
@@ -198,7 +199,7 @@ func TestFlagFlow(t *testing.T) {
 	require.NoError(t, err)
 
 	require.Equal(t, user.UUID, createFlagResp.UserUUID)
-	require.Equal(t, "my-flag", createFlagResp.Name)
+	require.Equal(t, flagName, createFlagResp.Name)
 	require.False(t, createFlagResp.IsEnabled)
 	testkit.RequireTimeAlmostEqual(t, flagCreatedAt, createFlagResp.CreatedAt)
 	testkit.RequireTimeAlmostEqual(t, flagCreatedAt, createFlagResp.UpdatedAt)
@@ -222,14 +223,13 @@ func TestFlagFlow(t *testing.T) {
 
 	require.Len(t, listFlagsResp.Flags, 1)
 	require.Equal(t, user.UUID, listFlagsResp.Flags[0].UserUUID)
-	require.Equal(t, "my-flag", listFlagsResp.Flags[0].Name)
+	require.Equal(t, flagName, listFlagsResp.Flags[0].Name)
 	require.False(t, listFlagsResp.Flags[0].IsEnabled)
 	testkit.RequireTimeAlmostEqual(t, flagCreatedAt, listFlagsResp.Flags[0].CreatedAt)
 	testkit.RequireTimeAlmostEqual(t, flagCreatedAt, listFlagsResp.Flags[0].UpdatedAt)
 
 	reqBody = `
 		{
-			"name": "my-updated-flag",
 			"is_enabled": true
 		}
 	`
@@ -253,7 +253,7 @@ func TestFlagFlow(t *testing.T) {
 
 	require.Equal(t, createFlagResp.ID, updateFlagsResp.ID)
 	require.Equal(t, user.UUID, updateFlagsResp.UserUUID)
-	require.Equal(t, "my-updated-flag", updateFlagsResp.Name)
+	require.Equal(t, flagName, updateFlagsResp.Name)
 	require.True(t, updateFlagsResp.IsEnabled)
 	testkit.RequireTimeAlmostEqual(t, createFlagResp.CreatedAt, updateFlagsResp.CreatedAt)
 	testkit.RequireTimeAlmostEqual(t, flagUpdatedAt, updateFlagsResp.UpdatedAt)

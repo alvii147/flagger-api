@@ -78,15 +78,12 @@ type DisableFlagResponse struct {
 
 // UpdateFlagRequest represents the request body for Flag update requests.
 type UpdateFlagRequest struct {
-	Name      string `json:"name"`
-	IsEnabled bool   `json:"is_enabled"`
+	IsEnabled bool `json:"is_enabled"`
 }
 
 // Validate validates fields in UpdateFlagRequest.
 func (r *UpdateFlagRequest) Validate() (bool, map[string][]string) {
 	v := validate.NewValidator()
-	v.ValidateStringNotBlank("name", r.Name)
-	v.ValidateStringSlug("name", r.Name)
 
 	return v.Passed(), v.Failures()
 }

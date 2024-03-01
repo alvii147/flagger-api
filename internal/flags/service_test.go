@@ -313,22 +313,22 @@ func TestServiceUpdateFlagSuccess(t *testing.T) {
 		u.IsActive = true
 	})
 
-	flag := testkitinternal.MustCreateUserFlag(t, user.UUID, "my-flag")
+	flagName := "my-flag"
+	flag := testkitinternal.MustCreateUserFlag(t, user.UUID, flagName)
 
 	dbPool := testkitinternal.RequireCreateDatabasePool(t)
 	repo := flags.NewRepository()
 	svc := flags.NewService(dbPool, repo)
 
-	updatedName := "my-updated-flag"
 	updatedIsEnabled := true
 
 	ctx := context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user.UUID)
-	updatedFlag, err := svc.UpdateFlag(ctx, flag.ID, updatedName, updatedIsEnabled)
+	updatedFlag, err := svc.UpdateFlag(ctx, flag.ID, updatedIsEnabled)
 	require.NoError(t, err)
 
 	require.Equal(t, flag.ID, updatedFlag.ID)
 	require.Equal(t, user.UUID, updatedFlag.UserUUID)
-	require.Equal(t, updatedName, updatedFlag.Name)
+	require.Equal(t, flagName, updatedFlag.Name)
 	require.Equal(t, updatedIsEnabled, updatedFlag.IsEnabled)
 	testkit.RequireTimeAlmostEqual(t, flag.CreatedAt, updatedFlag.CreatedAt)
 	testkit.RequireTimeAlmostEqual(t, flag.UpdatedAt, updatedFlag.UpdatedAt)
@@ -393,7 +393,7 @@ func TestServiceUpdateFlagError(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
-			_, err := svc.UpdateFlag(testcase.ctx, testcase.flagID, "my-updated-flag", true)
+			_, err := svc.UpdateFlag(testcase.ctx, testcase.flagID, true)
 			require.Error(t, err)
 			if testcase.wantErr != nil {
 				require.ErrorIs(t, err, testcase.wantErr)

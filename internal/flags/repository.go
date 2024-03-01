@@ -226,13 +226,12 @@ func (repo *repository) UpdateFlagByID(dbConn *pgxpool.Conn, flag *Flag) (*Flag,
 UPDATE
 	Flag f
 SET
-	name = $1,
-	is_enabled = $2
+	is_enabled = $1
 FROM
 	"User" u
 WHERE
-	f.id = $3
-	AND f.user_uuid = $4
+	f.id = $2
+	AND f.user_uuid = $3
 	AND f.user_uuid = u.uuid
 	AND u.is_active = TRUE
 RETURNING
@@ -247,7 +246,6 @@ RETURNING
 	err := dbConn.QueryRow(
 		context.Background(),
 		q,
-		flag.Name,
 		flag.IsEnabled,
 		flag.ID,
 		flag.UserUUID,

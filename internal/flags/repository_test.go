@@ -264,8 +264,9 @@ func TestRepositoryUpdateFlagByIDSuccess(t *testing.T) {
 		u.IsActive = true
 	})
 
+	flagName := "my-flag"
 	createdAt := time.Now().UTC()
-	flag := testkitinternal.MustCreateUserFlag(t, user.UUID, "my-flag")
+	flag := testkitinternal.MustCreateUserFlag(t, user.UUID, flagName)
 
 	time.Sleep(4 * time.Second)
 
@@ -276,7 +277,6 @@ func TestRepositoryUpdateFlagByIDSuccess(t *testing.T) {
 	flag = &flags.Flag{
 		ID:        flag.ID,
 		UserUUID:  user.UUID,
-		Name:      "my-updated-flag",
 		IsEnabled: true,
 	}
 
@@ -286,7 +286,7 @@ func TestRepositoryUpdateFlagByIDSuccess(t *testing.T) {
 
 	require.Equal(t, flag.ID, updatedFlag.ID)
 	require.Equal(t, flag.UserUUID, updatedFlag.UserUUID)
-	require.Equal(t, flag.Name, updatedFlag.Name)
+	require.Equal(t, flagName, updatedFlag.Name)
 	require.True(t, updatedFlag.IsEnabled)
 	testkit.RequireTimeAlmostEqual(t, createdAt, updatedFlag.CreatedAt)
 	testkit.RequireTimeAlmostEqual(t, updatedAt, updatedFlag.UpdatedAt)
@@ -333,7 +333,6 @@ func TestRepositoryUpdateFlagByIDError(t *testing.T) {
 			flag := &flags.Flag{
 				ID:        testcase.flagID,
 				UserUUID:  testcase.userUUID,
-				Name:      "my-updated-flag",
 				IsEnabled: true,
 			}
 

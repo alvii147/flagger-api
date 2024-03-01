@@ -16,7 +16,7 @@ type Service interface {
 	GetFlagByID(ctx context.Context, flagID int) (*Flag, error)
 	GetFlagByName(ctx context.Context, name string) (*Flag, error)
 	ListFlags(ctx context.Context) ([]*Flag, error)
-	UpdateFlag(ctx context.Context, flagID int, name string, isEnabled bool) (*Flag, error)
+	UpdateFlag(ctx context.Context, flagID int, isEnabled bool) (*Flag, error)
 }
 
 // service implements Service.
@@ -141,7 +141,7 @@ func (svc *service) ListFlags(ctx context.Context) ([]*Flag, error) {
 }
 
 // UpdateFlag updates Flag by ID for currently authenticated User.
-func (svc *service) UpdateFlag(ctx context.Context, flagID int, name string, isEnabled bool) (*Flag, error) {
+func (svc *service) UpdateFlag(ctx context.Context, flagID int, isEnabled bool) (*Flag, error) {
 	userUUID, ok := ctx.Value(auth.AuthContextKeyUserUUID).(string)
 	if !ok {
 		return nil, errors.New("UpdateFlag failed to ctx.Value user UUID from ctx")
@@ -156,7 +156,6 @@ func (svc *service) UpdateFlag(ctx context.Context, flagID int, name string, isE
 	flag := &Flag{
 		ID:        flagID,
 		UserUUID:  userUUID,
-		Name:      name,
 		IsEnabled: isEnabled,
 	}
 

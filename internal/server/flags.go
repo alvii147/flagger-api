@@ -292,7 +292,7 @@ func (ctrl *controller) HandleUpdateFlag(w *httputils.ResponseWriter, r *http.Re
 		return
 	}
 
-	flag, err := ctrl.flagsService.UpdateFlag(r.Context(), flagID, string(req.Name), req.IsEnabled)
+	flag, err := ctrl.flagsService.UpdateFlag(r.Context(), flagID, req.IsEnabled)
 	if err != nil {
 		ctrl.logger.LogError("HandleUpdateFlag failed to ctrl.flagsService.UpdateFlag:", err)
 		switch {
