@@ -39,7 +39,7 @@ The `flagger-api-server` container's logs should indicate which port it is runni
 Following is a list of available overridable environment variables:
 
 Variable | Default | Description
---- | --- | --- | ---
+--- | --- | ---
 `FLAGGERAPI_HOSTNAME` | `0.0.0.0` | Serving hostname of API
 `FLAGGERAPI_PORT` | `8080` | Serving port number of API
 `FLAGGERAPI_SECRET_KEY` | `DEADBEEF` | Secret key used for token encryption
