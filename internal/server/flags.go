@@ -37,14 +37,14 @@ func getFlagNameParam(r *http.Request) (string, error) {
 	return param, nil
 }
 
-// HandleCreateFlag handles creation of new User Flag.
+// handleCreateFlag handles creation of new User Flag.
 // Methods: POST
 // URL: /flags
-func (ctrl *controller) HandleCreateFlag(w *httputils.ResponseWriter, r *http.Request) {
+func (ctrl *controller) handleCreateFlag(w *httputils.ResponseWriter, r *http.Request) {
 	var req api.CreateFlagRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		ctrl.logger.LogWarn("HandleCreateFlag failed to Decode:", err)
+		ctrl.logger.LogWarn("handleCreateFlag failed to Decode:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInvalidRequest,
@@ -57,7 +57,7 @@ func (ctrl *controller) HandleCreateFlag(w *httputils.ResponseWriter, r *http.Re
 
 	validationPassed, validationFailures := req.Validate()
 	if !validationPassed {
-		ctrl.logger.LogWarn("HandleCreateFlag failed to Validate:", validationFailures)
+		ctrl.logger.LogWarn("handleCreateFlag failed to Validate:", validationFailures)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:               api.ErrCodeInvalidRequest,
@@ -71,7 +71,7 @@ func (ctrl *controller) HandleCreateFlag(w *httputils.ResponseWriter, r *http.Re
 
 	flag, err := ctrl.flagsService.CreateFlag(r.Context(), string(req.Name))
 	if err != nil {
-		ctrl.logger.LogWarn("HandleCreateFlag failed to ctrl.flagsService.CreateFlag:", err)
+		ctrl.logger.LogWarn("handleCreateFlag failed to ctrl.flagsService.CreateFlag:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInternalServerError,
@@ -94,10 +94,10 @@ func (ctrl *controller) HandleCreateFlag(w *httputils.ResponseWriter, r *http.Re
 	w.WriteJSON(responseBody, http.StatusCreated)
 }
 
-// HandleGetFlagByID handles retrieval of Flag of currently authenticated User using Flag ID.
+// handleGetFlagByID handles retrieval of Flag of currently authenticated User using Flag ID.
 // Methods: GET
 // URL: /flags/{id}
-func (ctrl *controller) HandleGetFlagByID(w *httputils.ResponseWriter, r *http.Request) {
+func (ctrl *controller) handleGetFlagByID(w *httputils.ResponseWriter, r *http.Request) {
 	flagID, err := getFlagIDParam(r)
 	if err != nil {
 		w.WriteJSON(
@@ -112,7 +112,7 @@ func (ctrl *controller) HandleGetFlagByID(w *httputils.ResponseWriter, r *http.R
 
 	flag, err := ctrl.flagsService.GetFlagByID(r.Context(), flagID)
 	if err != nil {
-		ctrl.logger.LogError("HandleGetFlagByID failed to ctrl.flagsService.GetFlagByID:", err)
+		ctrl.logger.LogError("handleGetFlagByID failed to ctrl.flagsService.GetFlagByID:", err)
 		switch {
 		case errors.Is(err, errutils.ErrFlagNotFound):
 			w.WriteJSON(
@@ -146,10 +146,10 @@ func (ctrl *controller) HandleGetFlagByID(w *httputils.ResponseWriter, r *http.R
 	w.WriteJSON(resp, http.StatusOK)
 }
 
-// HandleGetFlagByName handles retrieval of Flag of currently authenticated User using Flag ID.
+// handleGetFlagByName handles retrieval of Flag of currently authenticated User using Flag ID.
 // Methods: GET
 // URL: /api/flags/{name}
-func (ctrl *controller) HandleGetFlagByName(w *httputils.ResponseWriter, r *http.Request) {
+func (ctrl *controller) handleGetFlagByName(w *httputils.ResponseWriter, r *http.Request) {
 	flagName, err := getFlagNameParam(r)
 	if err != nil {
 		w.WriteJSON(
@@ -164,7 +164,7 @@ func (ctrl *controller) HandleGetFlagByName(w *httputils.ResponseWriter, r *http
 
 	flag, err := ctrl.flagsService.GetFlagByName(r.Context(), flagName)
 	if err != nil {
-		ctrl.logger.LogError("HandleGetFlagByName failed to ctrl.flagsService.GetFlagByName:", err)
+		ctrl.logger.LogError("handleGetFlagByName failed to ctrl.flagsService.GetFlagByName:", err)
 		switch {
 		case errors.Is(err, errutils.ErrFlagNotFound):
 			resp := &api.GetFlagByNameResponse{
@@ -213,13 +213,13 @@ func (ctrl *controller) HandleGetFlagByName(w *httputils.ResponseWriter, r *http
 	w.WriteJSON(resp, http.StatusOK)
 }
 
-// HandleListFlags handles retrieval of all Flags of currently authenticated User.
+// handleListFlags handles retrieval of all Flags of currently authenticated User.
 // Methods: GET
 // URL: /flags
-func (ctrl *controller) HandleListFlags(w *httputils.ResponseWriter, r *http.Request) {
+func (ctrl *controller) handleListFlags(w *httputils.ResponseWriter, r *http.Request) {
 	flags, err := ctrl.flagsService.ListFlags(r.Context())
 	if err != nil {
-		ctrl.logger.LogWarn("HandleListFlags failed to ctrl.flagsService.ListFlags:", err)
+		ctrl.logger.LogWarn("handleListFlags failed to ctrl.flagsService.ListFlags:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInternalServerError,
@@ -248,10 +248,10 @@ func (ctrl *controller) HandleListFlags(w *httputils.ResponseWriter, r *http.Req
 	w.WriteJSON(responseBody, http.StatusOK)
 }
 
-// HandleUpdateFlag handles updating of Flag of currently authenticated User.
+// handleUpdateFlag handles updating of Flag of currently authenticated User.
 // Methods: PUT
 // URL: /flags/{id}
-func (ctrl *controller) HandleUpdateFlag(w *httputils.ResponseWriter, r *http.Request) {
+func (ctrl *controller) handleUpdateFlag(w *httputils.ResponseWriter, r *http.Request) {
 	flagID, err := getFlagIDParam(r)
 	if err != nil {
 		w.WriteJSON(
@@ -267,7 +267,7 @@ func (ctrl *controller) HandleUpdateFlag(w *httputils.ResponseWriter, r *http.Re
 	var req api.UpdateFlagRequest
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		ctrl.logger.LogWarn("HandleUpdateFlag failed to Decode:", err)
+		ctrl.logger.LogWarn("handleUpdateFlag failed to Decode:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInvalidRequest,
@@ -280,7 +280,7 @@ func (ctrl *controller) HandleUpdateFlag(w *httputils.ResponseWriter, r *http.Re
 
 	validationPassed, validationFailures := req.Validate()
 	if !validationPassed {
-		ctrl.logger.LogWarn("HandleUpdateFlag failed to Validate:", validationFailures)
+		ctrl.logger.LogWarn("handleUpdateFlag failed to Validate:", validationFailures)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:               api.ErrCodeInvalidRequest,
@@ -294,7 +294,7 @@ func (ctrl *controller) HandleUpdateFlag(w *httputils.ResponseWriter, r *http.Re
 
 	flag, err := ctrl.flagsService.UpdateFlag(r.Context(), flagID, req.IsEnabled)
 	if err != nil {
-		ctrl.logger.LogError("HandleUpdateFlag failed to ctrl.flagsService.UpdateFlag:", err)
+		ctrl.logger.LogError("handleUpdateFlag failed to ctrl.flagsService.UpdateFlag:", err)
 		switch {
 		case errors.Is(err, errutils.ErrFlagNotFound):
 			w.WriteJSON(

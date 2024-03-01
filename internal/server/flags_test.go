@@ -133,7 +133,6 @@ func TestFlagFlow(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
 	t.Cleanup(srv.Close)
 

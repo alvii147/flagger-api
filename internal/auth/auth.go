@@ -133,10 +133,10 @@ func validateAuthJWT(token string, tokenType JWTType, secretKey string) (*api.Au
 	}
 
 	if !ok {
-		claims = nil
+		return nil, false
 	}
 
-	return claims, ok
+	return claims, true
 }
 
 // createActivationJWTWithType creates JWT for User activation.

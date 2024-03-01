@@ -90,7 +90,6 @@ func TestHandleCreateUser(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
 	t.Cleanup(srv.Close)
 
@@ -320,7 +319,6 @@ func TestHandleActivateUser(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
 	t.Cleanup(srv.Close)
 
@@ -455,7 +453,6 @@ func TestHandleGetUserMe(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
 	t.Cleanup(srv.Close)
 
@@ -595,7 +592,6 @@ func TestHandleCreateJWT(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
 	t.Cleanup(srv.Close)
 
@@ -776,7 +772,6 @@ func TestHandleRefreshJWT(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
 	t.Cleanup(srv.Close)
 
@@ -890,7 +885,6 @@ func TestHandleCreateAPIKey(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
 	t.Cleanup(srv.Close)
 
@@ -1058,7 +1052,6 @@ func TestHandleListAPIKeys(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
 	t.Cleanup(srv.Close)
 
@@ -1179,7 +1172,6 @@ func TestHandleDeleteAPIKey(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
 	t.Cleanup(srv.Close)
 

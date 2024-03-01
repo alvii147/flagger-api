@@ -17,7 +17,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// controller handles server API operations.
+// Controller handles server API operations.
+type Controller interface {
+	Serve() error
+	Close() error
+}
+
+// controller implements Controller.
 type controller struct {
 	config       *env.Config
 	router       httputils.Router
@@ -92,6 +98,8 @@ func NewController() (*controller, error) {
 		authService:  authService,
 		flagsService: flagsService,
 	}
+
+	ctrl.route()
 
 	return ctrl, nil
 }

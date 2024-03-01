@@ -25,14 +25,14 @@ func getAPIKeyIDParam(r *http.Request) (int, error) {
 	return apiKeyID, nil
 }
 
-// HandleCreateUser handles creation of new Users.
+// handleCreateUser handles creation of new Users.
 // Methods: POST
 // URL: /auth/users
-func (ctrl *controller) HandleCreateUser(w *httputils.ResponseWriter, r *http.Request) {
+func (ctrl *controller) handleCreateUser(w *httputils.ResponseWriter, r *http.Request) {
 	var req api.CreateUserRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		ctrl.logger.LogWarn("HandleCreateUser failed to Decode:", err)
+		ctrl.logger.LogWarn("handleCreateUser failed to Decode:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInvalidRequest,
@@ -45,7 +45,7 @@ func (ctrl *controller) HandleCreateUser(w *httputils.ResponseWriter, r *http.Re
 
 	validationPassed, validationFailures := req.Validate()
 	if !validationPassed {
-		ctrl.logger.LogWarn("HandleCreateUser failed to Validate:", validationFailures)
+		ctrl.logger.LogWarn("handleCreateUser failed to Validate:", validationFailures)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:               api.ErrCodeInvalidRequest,
@@ -67,7 +67,7 @@ func (ctrl *controller) HandleCreateUser(w *httputils.ResponseWriter, r *http.Re
 		string(req.LastName),
 	)
 	if err != nil {
-		ctrl.logger.LogError("HandleCreateUser failed to ctrl.authService.CreateUser:", err)
+		ctrl.logger.LogError("handleCreateUser failed to ctrl.authService.CreateUser:", err)
 		switch {
 		case errors.Is(err, errutils.ErrUserAlreadyExists):
 			w.WriteJSON(
@@ -100,14 +100,14 @@ func (ctrl *controller) HandleCreateUser(w *httputils.ResponseWriter, r *http.Re
 	w.WriteJSON(resp, http.StatusCreated)
 }
 
-// HandleActivateUser handles activation of Users.
+// handleActivateUser handles activation of Users.
 // Methods: POST
 // URL: /auth/users/activate
-func (ctrl *controller) HandleActivateUser(w *httputils.ResponseWriter, r *http.Request) {
+func (ctrl *controller) handleActivateUser(w *httputils.ResponseWriter, r *http.Request) {
 	var req api.ActivateUserRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		ctrl.logger.LogWarn("HandleActivateUser failed to Decode:", err)
+		ctrl.logger.LogWarn("handleActivateUser failed to Decode:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInvalidRequest,
@@ -120,7 +120,7 @@ func (ctrl *controller) HandleActivateUser(w *httputils.ResponseWriter, r *http.
 
 	validationPassed, validationFailures := req.Validate()
 	if !validationPassed {
-		ctrl.logger.LogWarn("HandleActivateUser failed to Validate:", validationFailures)
+		ctrl.logger.LogWarn("handleActivateUser failed to Validate:", validationFailures)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:               api.ErrCodeInvalidRequest,
@@ -137,7 +137,7 @@ func (ctrl *controller) HandleActivateUser(w *httputils.ResponseWriter, r *http.
 		string(req.Token),
 	)
 	if err != nil {
-		ctrl.logger.LogError("HandleActivateUser failed to ctrl.authService.ActivateUser:", err)
+		ctrl.logger.LogError("handleActivateUser failed to ctrl.authService.ActivateUser:", err)
 		switch {
 		case errors.Is(err, errutils.ErrInvalidToken):
 			w.WriteJSON(
@@ -170,13 +170,13 @@ func (ctrl *controller) HandleActivateUser(w *httputils.ResponseWriter, r *http.
 	w.WriteJSON(nil, http.StatusOK)
 }
 
-// HandleGetUserMe handles retrieval of currently authenticated User.
+// handleGetUserMe handles retrieval of currently authenticated User.
 // Methods: GET
 // URL: /auth/users/me, /api/auth/users/me
-func (ctrl *controller) HandleGetUserMe(w *httputils.ResponseWriter, r *http.Request) {
+func (ctrl *controller) handleGetUserMe(w *httputils.ResponseWriter, r *http.Request) {
 	user, err := ctrl.authService.GetCurrentUser(r.Context())
 	if err != nil {
-		ctrl.logger.LogError("HandleGetUserMe failed to ctrl.authService.GetCurrentUser:", err)
+		ctrl.logger.LogError("handleGetUserMe failed to ctrl.authService.GetCurrentUser:", err)
 		switch {
 		case errors.Is(err, errutils.ErrUserNotFound):
 			w.WriteJSON(
@@ -209,14 +209,14 @@ func (ctrl *controller) HandleGetUserMe(w *httputils.ResponseWriter, r *http.Req
 	w.WriteJSON(resp, http.StatusOK)
 }
 
-// HandleCreateJWT handles authentication of User and creation of authentication JWTs.
+// handleCreateJWT handles authentication of User and creation of authentication JWTs.
 // Methods: POST
 // URL: /auth/tokens
-func (ctrl *controller) HandleCreateJWT(w *httputils.ResponseWriter, r *http.Request) {
+func (ctrl *controller) handleCreateJWT(w *httputils.ResponseWriter, r *http.Request) {
 	var req api.CreateTokenRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		ctrl.logger.LogWarn("HandleCreateJWT failed to Decode:", err)
+		ctrl.logger.LogWarn("handleCreateJWT failed to Decode:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInvalidRequest,
@@ -229,7 +229,7 @@ func (ctrl *controller) HandleCreateJWT(w *httputils.ResponseWriter, r *http.Req
 
 	validationPassed, validationFailures := req.Validate()
 	if !validationPassed {
-		ctrl.logger.LogWarn("HandleCreateJWT failed to Validate:", validationFailures)
+		ctrl.logger.LogWarn("handleCreateJWT failed to Validate:", validationFailures)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:               api.ErrCodeInvalidRequest,
@@ -247,7 +247,7 @@ func (ctrl *controller) HandleCreateJWT(w *httputils.ResponseWriter, r *http.Req
 		string(req.Password),
 	)
 	if err != nil {
-		ctrl.logger.LogWarn("HandleCreateJWT failed to ctrl.authService.CreateJWT:", err)
+		ctrl.logger.LogWarn("handleCreateJWT failed to ctrl.authService.CreateJWT:", err)
 		switch {
 		case errors.Is(err, errutils.ErrInvalidCredentials):
 			w.WriteJSON(
@@ -277,14 +277,14 @@ func (ctrl *controller) HandleCreateJWT(w *httputils.ResponseWriter, r *http.Req
 	w.WriteJSON(responseBody, http.StatusCreated)
 }
 
-// HandleRefreshJWT handles creation of new access JWT.
+// handleRefreshJWT handles creation of new access JWT.
 // Methods: POST
 // URL: /auth/tokens/refresh
-func (ctrl *controller) HandleRefreshJWT(w *httputils.ResponseWriter, r *http.Request) {
+func (ctrl *controller) handleRefreshJWT(w *httputils.ResponseWriter, r *http.Request) {
 	var req api.RefreshTokenRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		ctrl.logger.LogWarn("HandleRefreshJWT failed to Decode:", err)
+		ctrl.logger.LogWarn("handleRefreshJWT failed to Decode:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInvalidRequest,
@@ -297,7 +297,7 @@ func (ctrl *controller) HandleRefreshJWT(w *httputils.ResponseWriter, r *http.Re
 
 	validationPassed, validationFailures := req.Validate()
 	if !validationPassed {
-		ctrl.logger.LogWarn("HandleRefreshJWT failed to Validate:", validationFailures)
+		ctrl.logger.LogWarn("handleRefreshJWT failed to Validate:", validationFailures)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:               api.ErrCodeInvalidRequest,
@@ -314,7 +314,7 @@ func (ctrl *controller) HandleRefreshJWT(w *httputils.ResponseWriter, r *http.Re
 		string(req.Refresh),
 	)
 	if err != nil {
-		ctrl.logger.LogWarn("HandleRefreshJWT failed to ctrl.authService.RefreshJWT:", err)
+		ctrl.logger.LogWarn("handleRefreshJWT failed to ctrl.authService.RefreshJWT:", err)
 		switch {
 		case errors.Is(err, errutils.ErrInvalidToken):
 			w.WriteJSON(
@@ -343,14 +343,14 @@ func (ctrl *controller) HandleRefreshJWT(w *httputils.ResponseWriter, r *http.Re
 	w.WriteJSON(responseBody, http.StatusCreated)
 }
 
-// HandleCreateAPIKey handles creation of new User API Key.
+// handleCreateAPIKey handles creation of new User API Key.
 // Methods: POST
 // URL: /auth/api-keys
-func (ctrl *controller) HandleCreateAPIKey(w *httputils.ResponseWriter, r *http.Request) {
+func (ctrl *controller) handleCreateAPIKey(w *httputils.ResponseWriter, r *http.Request) {
 	var req api.CreateAPIKeyRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		ctrl.logger.LogWarn("HandleCreateAPIKey failed to Decode:", err)
+		ctrl.logger.LogWarn("handleCreateAPIKey failed to Decode:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInvalidRequest,
@@ -363,7 +363,7 @@ func (ctrl *controller) HandleCreateAPIKey(w *httputils.ResponseWriter, r *http.
 
 	validationPassed, validationFailures := req.Validate()
 	if !validationPassed {
-		ctrl.logger.LogWarn("HandleCreateAPIKey failed to Validate:", validationFailures)
+		ctrl.logger.LogWarn("handleCreateAPIKey failed to Validate:", validationFailures)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:               api.ErrCodeInvalidRequest,
@@ -377,7 +377,7 @@ func (ctrl *controller) HandleCreateAPIKey(w *httputils.ResponseWriter, r *http.
 
 	apiKey, key, err := ctrl.authService.CreateAPIKey(r.Context(), string(req.Name), req.ExpiresAt)
 	if err != nil {
-		ctrl.logger.LogWarn("HandleCreateAPIKey failed to ctrl.authService.CreateAPIKey:", err)
+		ctrl.logger.LogWarn("handleCreateAPIKey failed to ctrl.authService.CreateAPIKey:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInternalServerError,
@@ -400,13 +400,13 @@ func (ctrl *controller) HandleCreateAPIKey(w *httputils.ResponseWriter, r *http.
 	w.WriteJSON(responseBody, http.StatusCreated)
 }
 
-// HandleListAPIKeys handles retrieval of API Keys for currently authenticated User.
+// handleListAPIKeys handles retrieval of API Keys for currently authenticated User.
 // Methods: GET
 // URL: /auth/api-keys
-func (ctrl *controller) HandleListAPIKeys(w *httputils.ResponseWriter, r *http.Request) {
+func (ctrl *controller) handleListAPIKeys(w *httputils.ResponseWriter, r *http.Request) {
 	apiKeys, err := ctrl.authService.ListAPIKeys(r.Context())
 	if err != nil {
-		ctrl.logger.LogWarn("HandleGetAPIKeys failed to ctrl.authService.ListAPIKeys:", err)
+		ctrl.logger.LogWarn("handleListAPIKeys failed to ctrl.authService.ListAPIKeys:", err)
 		w.WriteJSON(
 			api.ErrorResponse{
 				Code:   api.ErrCodeInternalServerError,
@@ -435,10 +435,10 @@ func (ctrl *controller) HandleListAPIKeys(w *httputils.ResponseWriter, r *http.R
 	w.WriteJSON(responseBody, http.StatusOK)
 }
 
-// HandleDeleteAPIKey handles deletion of API Keys.
+// handleDeleteAPIKey handles deletion of API Keys.
 // Methods: DELETE
 // URL: /auth/api-keys/{id}
-func (ctrl *controller) HandleDeleteAPIKey(w *httputils.ResponseWriter, r *http.Request) {
+func (ctrl *controller) handleDeleteAPIKey(w *httputils.ResponseWriter, r *http.Request) {
 	apiKeyID, err := getAPIKeyIDParam(r)
 	if err != nil {
 		w.WriteJSON(
@@ -453,7 +453,7 @@ func (ctrl *controller) HandleDeleteAPIKey(w *httputils.ResponseWriter, r *http.
 
 	err = ctrl.authService.DeleteAPIKey(r.Context(), apiKeyID)
 	if err != nil {
-		ctrl.logger.LogError("HandleDeleteAPIKey failed to ctrl.authService.DeleteAPIKey:", err)
+		ctrl.logger.LogError("handleDeleteAPIKey failed to ctrl.authService.DeleteAPIKey:", err)
 		switch {
 		case errors.Is(err, errutils.ErrAPIKeyNotFound):
 			w.WriteJSON(

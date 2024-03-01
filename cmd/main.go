@@ -30,8 +30,6 @@ func main() {
 		os.Exit(0)
 	}()
 
-	ctrl.Route()
-
 	err = ctrl.Serve()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to ctrl.Serve: %v\n", err)
