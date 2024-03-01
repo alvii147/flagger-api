@@ -129,15 +129,13 @@ func TestFlagFlow(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err = ctrl.Close()
+		err := ctrl.Close()
 		require.NoError(t, err)
 	})
 
 	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
-	t.Cleanup(func() {
-		srv.Close()
-	})
+	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,

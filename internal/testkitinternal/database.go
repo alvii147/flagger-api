@@ -25,9 +25,7 @@ func RequireCreateDatabasePool(t *testing.T) *pgxpool.Pool {
 	)
 	require.NoError(t, err)
 
-	t.Cleanup(func() {
-		dbPool.Close()
-	})
+	t.Cleanup(dbPool.Close)
 
 	return dbPool
 }
@@ -38,9 +36,7 @@ func RequireCreateDatabaseConn(t *testing.T, dbPool *pgxpool.Pool, ctx context.C
 	dbConn, err := dbPool.Acquire(ctx)
 	require.NoError(t, err)
 
-	t.Cleanup(func() {
-		dbConn.Release()
-	})
+	t.Cleanup(dbConn.Release)
 
 	return dbConn
 }

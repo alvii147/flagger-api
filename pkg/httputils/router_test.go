@@ -44,9 +44,7 @@ func TestRouterMethods(t *testing.T) {
 	router.DELETE("/path/delete", deleteHandler)
 
 	srv := httptest.NewServer(router)
-	t.Cleanup(func() {
-		srv.Close()
-	})
+	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -111,7 +109,8 @@ func TestRouterMethods(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			t.Cleanup(func() {
-				res.Body.Close()
+				err := res.Body.Close()
+				require.NoError(t, err)
 			})
 
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
@@ -155,9 +154,7 @@ func TestRouterMiddleware(t *testing.T) {
 	router.GET("/path/get", handler, middleware1, middleware2)
 
 	srv := httptest.NewServer(router)
-	t.Cleanup(func() {
-		srv.Close()
-	})
+	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -173,7 +170,8 @@ func TestRouterMiddleware(t *testing.T) {
 	res, err := httpClient.Do(req)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		res.Body.Close()
+		err := res.Body.Close()
+		require.NoError(t, err)
 	})
 
 	require.Equal(t, []string{"mw2", "mw1", "h"}, callStack)
@@ -193,9 +191,7 @@ func TestRouterPathParam(t *testing.T) {
 	)
 
 	srv := httptest.NewServer(router)
-	t.Cleanup(func() {
-		srv.Close()
-	})
+	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -211,7 +207,8 @@ func TestRouterPathParam(t *testing.T) {
 	res, err := httpClient.Do(req)
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		res.Body.Close()
+		err := res.Body.Close()
+		require.NoError(t, err)
 	})
 
 	require.Equal(t, http.StatusOK, res.StatusCode)

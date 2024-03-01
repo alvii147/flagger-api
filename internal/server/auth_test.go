@@ -86,15 +86,13 @@ func TestHandleCreateUser(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err = ctrl.Close()
+		err := ctrl.Close()
 		require.NoError(t, err)
 	})
 
 	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
-	t.Cleanup(func() {
-		srv.Close()
-	})
+	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -282,7 +280,8 @@ func TestHandleCreateUser(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			t.Cleanup(func() {
-				res.Body.Close()
+				err := res.Body.Close()
+				require.NoError(t, err)
 			})
 
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
@@ -317,15 +316,13 @@ func TestHandleActivateUser(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err = ctrl.Close()
+		err := ctrl.Close()
 		require.NoError(t, err)
 	})
 
 	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
-	t.Cleanup(func() {
-		srv.Close()
-	})
+	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -430,7 +427,8 @@ func TestHandleActivateUser(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			t.Cleanup(func() {
-				res.Body.Close()
+				err := res.Body.Close()
+				require.NoError(t, err)
 			})
 
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
@@ -453,15 +451,13 @@ func TestHandleGetUserMe(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err = ctrl.Close()
+		err := ctrl.Close()
 		require.NoError(t, err)
 	})
 
 	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
-	t.Cleanup(func() {
-		srv.Close()
-	})
+	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -558,7 +554,8 @@ func TestHandleGetUserMe(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			t.Cleanup(func() {
-				res.Body.Close()
+				err := res.Body.Close()
+				require.NoError(t, err)
 			})
 
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
@@ -594,15 +591,13 @@ func TestHandleCreateJWT(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err = ctrl.Close()
+		err := ctrl.Close()
 		require.NoError(t, err)
 	})
 
 	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
-	t.Cleanup(func() {
-		srv.Close()
-	})
+	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -718,7 +713,8 @@ func TestHandleCreateJWT(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			t.Cleanup(func() {
-				res.Body.Close()
+				err := res.Body.Close()
+				require.NoError(t, err)
 			})
 
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
@@ -776,15 +772,13 @@ func TestHandleRefreshJWT(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err = ctrl.Close()
+		err := ctrl.Close()
 		require.NoError(t, err)
 	})
 
 	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
-	t.Cleanup(func() {
-		srv.Close()
-	})
+	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -850,7 +844,8 @@ func TestHandleRefreshJWT(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			t.Cleanup(func() {
-				res.Body.Close()
+				err := res.Body.Close()
+				require.NoError(t, err)
 			})
 
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
@@ -891,15 +886,13 @@ func TestHandleCreateAPIKey(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err = ctrl.Close()
+		err := ctrl.Close()
 		require.NoError(t, err)
 	})
 
 	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
-	t.Cleanup(func() {
-		srv.Close()
-	})
+	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -1025,7 +1018,8 @@ func TestHandleCreateAPIKey(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			t.Cleanup(func() {
-				res.Body.Close()
+				err := res.Body.Close()
+				require.NoError(t, err)
 			})
 
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
@@ -1060,15 +1054,13 @@ func TestHandleListAPIKeys(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err = ctrl.Close()
+		err := ctrl.Close()
 		require.NoError(t, err)
 	})
 
 	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
-	t.Cleanup(func() {
-		srv.Close()
-	})
+	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -1143,7 +1135,8 @@ func TestHandleListAPIKeys(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			t.Cleanup(func() {
-				res.Body.Close()
+				err := res.Body.Close()
+				require.NoError(t, err)
 			})
 
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
@@ -1182,15 +1175,13 @@ func TestHandleDeleteAPIKey(t *testing.T) {
 	ctrl, err := server.NewController()
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		err = ctrl.Close()
+		err := ctrl.Close()
 		require.NoError(t, err)
 	})
 
 	ctrl.Route()
 	srv := httptest.NewServer(ctrl)
-	t.Cleanup(func() {
-		srv.Close()
-	})
+	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -1276,7 +1267,8 @@ func TestHandleDeleteAPIKey(t *testing.T) {
 			res, err := httpClient.Do(req)
 			require.NoError(t, err)
 			t.Cleanup(func() {
-				res.Body.Close()
+				err := res.Body.Close()
+				require.NoError(t, err)
 			})
 
 			require.Equal(t, testcase.wantStatusCode, res.StatusCode)

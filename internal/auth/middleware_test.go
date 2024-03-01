@@ -186,7 +186,8 @@ func TestJWTAuthMiddleware(t *testing.T) {
 
 			result := rec.Result()
 			t.Cleanup(func() {
-				result.Body.Close()
+				err := result.Body.Close()
+				require.NoError(t, err)
 			})
 
 			responseBodyBytes, err := io.ReadAll(result.Body)
@@ -317,7 +318,8 @@ func TestAPIKeyAuthMiddleware(t *testing.T) {
 
 			result := rec.Result()
 			t.Cleanup(func() {
-				result.Body.Close()
+				err := result.Body.Close()
+				require.NoError(t, err)
 			})
 
 			responseBodyBytes, err := io.ReadAll(result.Body)
