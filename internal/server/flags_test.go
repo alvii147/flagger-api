@@ -13,6 +13,7 @@ import (
 	"github.com/alvii147/flagger-api/internal/server"
 	"github.com/alvii147/flagger-api/internal/testkitinternal"
 	"github.com/alvii147/flagger-api/pkg/api"
+	"github.com/alvii147/flagger-api/pkg/httputils"
 	"github.com/alvii147/flagger-api/pkg/testkit"
 	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
@@ -117,6 +118,402 @@ func TestGetFlagNameParam(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 				require.Equal(t, testcase.wantFlagName, name)
+			}
+		})
+	}
+}
+
+func TestHandleCreateFlag(t *testing.T) {
+	t.Parallel()
+
+	httpClient := &http.Client{
+		Timeout: 60 * time.Second,
+	}
+
+	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = true
+	})
+	userAccessJWT, _ := testkitinternal.MustCreateUserAuthJWTs(user.UUID)
+
+	testcases := []struct {
+		name           string
+		headers        map[string]string
+		requestBody    string
+		wantStatusCode int
+		wantFlagName   string
+		wantErrCode    string
+		wantErrDetail  string
+	}{
+		{
+			name: "Valid request",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", userAccessJWT),
+			},
+			requestBody: `
+				{
+					"name": "my-flag"
+				}
+			`,
+			wantStatusCode: http.StatusCreated,
+			wantFlagName:   "my-flag",
+			wantErrCode:    "",
+			wantErrDetail:  "",
+		},
+		{
+			name: "Name missing",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", userAccessJWT),
+			},
+			requestBody:    `{}`,
+			wantStatusCode: http.StatusBadRequest,
+			wantFlagName:   "",
+			wantErrCode:    api.ErrCodeInvalidRequest,
+			wantErrDetail:  api.ErrDetailInvalidRequestData,
+		},
+		{
+			name: "Non-slug name",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", userAccessJWT),
+			},
+			requestBody: `
+				{
+					"name": "MyFlag"
+				}
+			`,
+			wantStatusCode: http.StatusBadRequest,
+			wantFlagName:   "",
+			wantErrCode:    api.ErrCodeInvalidRequest,
+			wantErrDetail:  api.ErrDetailInvalidRequestData,
+		},
+		{
+			name:    "Unauthenticated request",
+			headers: map[string]string{},
+			requestBody: `
+				{
+					"name": "my-unauthenticated-flag"
+				}
+			`,
+			wantStatusCode: http.StatusUnauthorized,
+			wantFlagName:   "",
+			wantErrCode:    api.ErrCodeMissingCredentials,
+			wantErrDetail:  api.ErrDetailMissingCredentials,
+		},
+	}
+
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			req, err := http.NewRequest(
+				http.MethodPost,
+				TestServerURL+"/flags",
+				bytes.NewReader([]byte(testcase.requestBody)),
+			)
+			require.NoError(t, err)
+
+			for key, value := range testcase.headers {
+				req.Header.Add(key, value)
+			}
+
+			flagCreatedAt := time.Now().UTC()
+			res, err := httpClient.Do(req)
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			})
+
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+
+			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
+				var createFlagResp api.CreateFlagResponse
+				err = json.NewDecoder(res.Body).Decode(&createFlagResp)
+				require.NoError(t, err)
+
+				require.Equal(t, user.UUID, createFlagResp.UserUUID)
+				require.Equal(t, testcase.wantFlagName, createFlagResp.Name)
+				require.False(t, createFlagResp.IsEnabled)
+				testkit.RequireTimeAlmostEqual(t, flagCreatedAt, createFlagResp.CreatedAt)
+				testkit.RequireTimeAlmostEqual(t, flagCreatedAt, createFlagResp.UpdatedAt)
+			} else {
+				var errResp api.ErrorResponse
+				err = json.NewDecoder(res.Body).Decode(&errResp)
+				require.NoError(t, err)
+
+				require.Equal(t, testcase.wantErrCode, errResp.Code)
+				require.Equal(t, testcase.wantErrDetail, errResp.Detail)
+			}
+		})
+	}
+}
+
+func TestHandleGetFlagByID(t *testing.T) {
+	t.Parallel()
+
+	httpClient := &http.Client{
+		Timeout: 60 * time.Second,
+	}
+
+	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = true
+	})
+	activeUserAccessJWT, _ := testkitinternal.MustCreateUserAuthJWTs(activeUser.UUID)
+	activeUserFlag := testkitinternal.MustCreateUserFlag(t, activeUser.UUID, "active-user-flag")
+
+	inactiveUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = false
+	})
+	inactiveUserAccessJWT, _ := testkitinternal.MustCreateUserAuthJWTs(inactiveUser.UUID)
+	inactiveUserFlag := testkitinternal.MustCreateUserFlag(t, inactiveUser.UUID, "inactive-user-flag")
+
+	testcases := []struct {
+		name           string
+		path           string
+		headers        map[string]string
+		wantStatusCode int
+		wantErrCode    string
+		wantErrDetail  string
+	}{
+		{
+			name: "Get flag for active user",
+			path: fmt.Sprintf("/flags/%d", activeUserFlag.ID),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", activeUserAccessJWT),
+			},
+			wantStatusCode: http.StatusOK,
+			wantErrCode:    "",
+			wantErrDetail:  "",
+		},
+		{
+			name: "Get flag for inactive user",
+			path: fmt.Sprintf("/flags/%d", inactiveUserFlag.ID),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", inactiveUserAccessJWT),
+			},
+			wantStatusCode: http.StatusNotFound,
+			wantErrCode:    api.ErrCodeResourceNotFound,
+			wantErrDetail:  api.ErrDetailFlagNotFound,
+		},
+		{
+			name: "Get flag for another user",
+			path: fmt.Sprintf("/flags/%d", activeUserFlag.ID),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", inactiveUserAccessJWT),
+			},
+			wantStatusCode: http.StatusNotFound,
+			wantErrCode:    api.ErrCodeResourceNotFound,
+			wantErrDetail:  api.ErrDetailFlagNotFound,
+		},
+		{
+			name: "Get non-existent flag",
+			path: fmt.Sprintf("/flags/%d", 314159),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", activeUserAccessJWT),
+			},
+			wantStatusCode: http.StatusNotFound,
+			wantErrCode:    api.ErrCodeResourceNotFound,
+			wantErrDetail:  api.ErrDetailFlagNotFound,
+		},
+		{
+			name:           "Get flag without authentication",
+			path:           fmt.Sprintf("/flags/%d", activeUserFlag.ID),
+			headers:        map[string]string{},
+			wantStatusCode: http.StatusUnauthorized,
+			wantErrCode:    api.ErrCodeMissingCredentials,
+			wantErrDetail:  api.ErrDetailMissingCredentials,
+		},
+	}
+
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			req, err := http.NewRequest(http.MethodGet, TestServerURL+testcase.path, http.NoBody)
+			require.NoError(t, err)
+
+			for key, value := range testcase.headers {
+				req.Header.Add(key, value)
+			}
+
+			res, err := httpClient.Do(req)
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			})
+
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+
+			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
+				var getFlagByIDResp api.GetFlagByIDResponse
+				err = json.NewDecoder(res.Body).Decode(&getFlagByIDResp)
+				require.NoError(t, err)
+
+				require.Equal(t, activeUser.UUID, getFlagByIDResp.UserUUID)
+				require.Equal(t, activeUserFlag.Name, getFlagByIDResp.Name)
+				require.Equal(t, activeUserFlag.IsEnabled, getFlagByIDResp.IsEnabled)
+				testkit.RequireTimeAlmostEqual(t, activeUserFlag.CreatedAt, getFlagByIDResp.CreatedAt)
+				testkit.RequireTimeAlmostEqual(t, activeUserFlag.UpdatedAt, getFlagByIDResp.UpdatedAt)
+			} else {
+				var errResp api.ErrorResponse
+				err = json.NewDecoder(res.Body).Decode(&errResp)
+				require.NoError(t, err)
+
+				require.Equal(t, testcase.wantErrCode, errResp.Code)
+				require.Equal(t, testcase.wantErrDetail, errResp.Detail)
+			}
+		})
+	}
+}
+
+func TestHandleGetFlagByName(t *testing.T) {
+	t.Parallel()
+
+	httpClient := &http.Client{
+		Timeout: 60 * time.Second,
+	}
+
+	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = true
+	})
+	_, activeUserRawAPIKey := testkitinternal.MustCreateUserAPIKey(t, activeUser.UUID, nil)
+	activeUserFlag := testkitinternal.MustCreateUserFlag(t, activeUser.UUID, "active-user-flag")
+
+	inactiveUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = false
+	})
+	_, inactiveUserRawAPIKey := testkitinternal.MustCreateUserAPIKey(t, inactiveUser.UUID, nil)
+	inactiveUserFlag := testkitinternal.MustCreateUserFlag(t, inactiveUser.UUID, "inactive-user-flag")
+
+	testcases := []struct {
+		name           string
+		path           string
+		headers        map[string]string
+		wantStatusCode int
+		wantName       string
+		wantValid      bool
+		wantErrCode    string
+		wantErrDetail  string
+	}{
+		{
+			name: "Get flag for active user",
+			path: fmt.Sprintf("/api/flags/%s", activeUserFlag.Name),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("X-API-Key %s", activeUserRawAPIKey),
+			},
+			wantStatusCode: http.StatusOK,
+			wantName:       activeUserFlag.Name,
+			wantValid:      true,
+			wantErrCode:    "",
+			wantErrDetail:  "",
+		},
+		{
+			name: "Get flag for inactive user",
+			path: fmt.Sprintf("/api/flags/%s", inactiveUserFlag.Name),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("X-API-Key %s", inactiveUserRawAPIKey),
+			},
+			wantStatusCode: http.StatusUnauthorized,
+			wantName:       "",
+			wantValid:      false,
+			wantErrCode:    api.ErrCodeInvalidCredentials,
+			wantErrDetail:  api.ErrDetailInvalidToken,
+		},
+		{
+			name: "Get flag for another user",
+			path: fmt.Sprintf("/api/flags/%s", inactiveUserFlag.Name),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("X-API-Key %s", activeUserRawAPIKey),
+			},
+			wantStatusCode: http.StatusOK,
+			wantName:       inactiveUserFlag.Name,
+			wantValid:      false,
+			wantErrCode:    "",
+			wantErrDetail:  "",
+		},
+		{
+			name: "Get non-existent flag",
+			path: fmt.Sprintf("/api/flags/%s", "non-existent-flag"),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("X-API-Key %s", activeUserRawAPIKey),
+			},
+			wantStatusCode: http.StatusOK,
+			wantName:       "non-existent-flag",
+			wantValid:      false,
+			wantErrCode:    "",
+			wantErrDetail:  "",
+		},
+		{
+			name:           "Get flag without authentication",
+			path:           fmt.Sprintf("/api/flags/%s", activeUserFlag.Name),
+			headers:        map[string]string{},
+			wantStatusCode: http.StatusUnauthorized,
+			wantName:       "",
+			wantValid:      false,
+			wantErrCode:    api.ErrCodeMissingCredentials,
+			wantErrDetail:  api.ErrDetailMissingCredentials,
+		},
+	}
+
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			req, err := http.NewRequest(http.MethodGet, TestServerURL+testcase.path, http.NoBody)
+			require.NoError(t, err)
+
+			for key, value := range testcase.headers {
+				req.Header.Add(key, value)
+			}
+
+			res, err := httpClient.Do(req)
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			})
+
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+
+			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
+				var getFlagByNameResp api.GetFlagByNameResponse
+				err = json.NewDecoder(res.Body).Decode(&getFlagByNameResp)
+				require.NoError(t, err)
+
+				require.Equal(t, testcase.wantName, getFlagByNameResp.Name)
+				require.Equal(t, testcase.wantValid, getFlagByNameResp.Valid)
+
+				if testcase.wantValid {
+					require.NotNil(t, getFlagByNameResp.ID)
+					require.NotNil(t, getFlagByNameResp.UserUUID)
+					require.Equal(t, activeUser.UUID, *getFlagByNameResp.UserUUID)
+					require.Equal(t, activeUserFlag.IsEnabled, getFlagByNameResp.IsEnabled)
+					testkit.RequirePGTimestampAlmostEqual(t, pgtype.Timestamp{
+						Time:  activeUserFlag.CreatedAt,
+						Valid: true,
+					}, getFlagByNameResp.CreatedAt)
+					testkit.RequirePGTimestampAlmostEqual(t, pgtype.Timestamp{
+						Time:  activeUserFlag.UpdatedAt,
+						Valid: true,
+					}, getFlagByNameResp.UpdatedAt)
+				} else {
+					require.Nil(t, getFlagByNameResp.ID)
+					require.Nil(t, getFlagByNameResp.UserUUID)
+					require.False(t, getFlagByNameResp.IsEnabled)
+					require.False(t, getFlagByNameResp.CreatedAt.Valid)
+					require.False(t, getFlagByNameResp.UpdatedAt.Valid)
+					require.False(t, getFlagByNameResp.Valid)
+				}
+			} else {
+				var errResp api.ErrorResponse
+				err = json.NewDecoder(res.Body).Decode(&errResp)
+				require.NoError(t, err)
+
+				require.Equal(t, testcase.wantErrCode, errResp.Code)
+				require.Equal(t, testcase.wantErrDetail, errResp.Detail)
 			}
 		})
 	}

@@ -1154,6 +1154,16 @@ func TestHandleDeleteAPIKey(t *testing.T) {
 			wantErrDetail:  api.ErrDetailAPIKeyNotFound,
 		},
 		{
+			name: "Delete non-existent API key",
+			path: fmt.Sprintf("/auth/api-keys/%d", 314159),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", activeUserAccessJWT),
+			},
+			wantStatusCode: http.StatusNotFound,
+			wantErrCode:    api.ErrCodeResourceNotFound,
+			wantErrDetail:  api.ErrDetailAPIKeyNotFound,
+		},
+		{
 			name:           "Delete API key without authentication",
 			path:           fmt.Sprintf("/auth/api-keys/%d", activeUserAPIKey2.ID),
 			headers:        map[string]string{},

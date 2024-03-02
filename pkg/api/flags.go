@@ -16,6 +16,7 @@ type CreateFlagRequest struct {
 func (r *CreateFlagRequest) Validate() (bool, map[string][]string) {
 	v := validate.NewValidator()
 	v.ValidateStringNotBlank("name", r.Name)
+	v.ValidateStringSlug("name", r.Name)
 
 	return v.Passed(), v.Failures()
 }

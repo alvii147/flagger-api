@@ -178,7 +178,7 @@ func (ctrl *controller) handleGetFlagByName(w *httputils.ResponseWriter, r *http
 				UpdatedAt: pgtype.Timestamp{
 					Valid: false,
 				},
-				Valid: true,
+				Valid: false,
 			}
 			w.WriteJSON(resp, http.StatusOK)
 			return
