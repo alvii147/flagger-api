@@ -3,7 +3,6 @@ package testkitinternal
 import (
 	"context"
 	"fmt"
-	"testing"
 	"time"
 
 	"github.com/alvii147/flagger-api/internal/auth"
@@ -35,7 +34,7 @@ func MustHashPassword(password string) string {
 }
 
 // MustCreateUser creates and returns a new user and panics on error.
-func MustCreateUser(t *testing.T, modifier func(u *auth.User)) (*auth.User, string) {
+func MustCreateUser(t testkit.TestingT, modifier func(u *auth.User)) (*auth.User, string) {
 	dbPool := RequireCreateDatabasePool(t)
 	dbConn := RequireCreateDatabaseConn(t, dbPool, context.Background())
 	repo := auth.NewRepository()
@@ -104,7 +103,7 @@ func MustCreateUserAuthJWTs(userUUID string) (string, string) {
 }
 
 // MustCreateUserAPIKey creates and returns a new API key for User and panics on error.
-func MustCreateUserAPIKey(t *testing.T, userUUID string, modifier func(k *auth.APIKey)) (*auth.APIKey, string) {
+func MustCreateUserAPIKey(t testkit.TestingT, userUUID string, modifier func(k *auth.APIKey)) (*auth.APIKey, string) {
 	dbPool := RequireCreateDatabasePool(t)
 	dbConn := RequireCreateDatabaseConn(t, dbPool, context.Background())
 	repo := auth.NewRepository()

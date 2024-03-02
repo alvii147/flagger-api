@@ -22,19 +22,48 @@ import (
 func TestHashPassword(t *testing.T) {
 	t.Parallel()
 
-	password := testkit.GenerateFakePassword()
+	testcases := []struct {
+		name        string
+		hashingCost int
+		wantErr     bool
+	}{
+		{
+			name:        "Valid hashing cost",
+			hashingCost: 14,
+			wantErr:     false,
+		},
+		{
+			name:        "Invalid hashing cost",
+			hashingCost: 32,
+			wantErr:     true,
+		},
+	}
 
-	hashedPassword, err := auth.HashPassword(password, 14)
-	require.NoError(t, err)
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
 
-	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-	require.NoError(t, err)
+			password := testkit.GenerateFakePassword()
 
-	hashedPassword, err = auth.HashPassword(testkit.GenerateFakePassword(), 14)
-	require.NoError(t, err)
+			hashedPassword, err := auth.HashPassword(password, testcase.hashingCost)
 
-	err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-	require.Error(t, err)
+			if testcase.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+
+				err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+				require.NoError(t, err)
+
+				hashedPassword, err = auth.HashPassword(testkit.GenerateFakePassword(), 14)
+				require.NoError(t, err)
+
+				err = bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+				require.Error(t, err)
+			}
+		})
+	}
 }
 
 func TestCreateAuthJWTSuccess(t *testing.T) {
@@ -451,17 +480,45 @@ func TestSendActivationMail(t *testing.T) {
 func TestCreateAPIKey(t *testing.T) {
 	t.Parallel()
 
-	prefix, rawKey, hashedKey, err := auth.CreateAPIKey(14)
-	require.NoError(t, err)
+	testcases := []struct {
+		name        string
+		hashingCost int
+		wantErr     bool
+	}{
+		{
+			name:        "Valid hashing cost",
+			hashingCost: 14,
+			wantErr:     false,
+		},
+		{
+			name:        "Invalid hashing cost",
+			hashingCost: 32,
+			wantErr:     true,
+		},
+	}
 
-	err = bcrypt.CompareHashAndPassword([]byte(hashedKey), []byte(rawKey))
-	require.NoError(t, err)
+	for _, testcase := range testcases {
+		testcase := testcase
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
 
-	r := regexp.MustCompile(`^(\S+)\.(\S+)$`)
-	matches := r.FindStringSubmatch(rawKey)
+			prefix, rawKey, hashedKey, err := auth.CreateAPIKey(testcase.hashingCost)
+			if testcase.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
 
-	require.Len(t, matches, 3)
-	require.Equal(t, prefix, matches[1])
+				err = bcrypt.CompareHashAndPassword([]byte(hashedKey), []byte(rawKey))
+				require.NoError(t, err)
+
+				r := regexp.MustCompile(`^(\S+)\.(\S+)$`)
+				matches := r.FindStringSubmatch(rawKey)
+
+				require.Len(t, matches, 3)
+				require.Equal(t, prefix, matches[1])
+			}
+		})
+	}
 }
 
 func TestParseAPIKey(t *testing.T) {

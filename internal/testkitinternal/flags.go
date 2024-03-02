@@ -3,13 +3,13 @@ package testkitinternal
 import (
 	"context"
 	"fmt"
-	"testing"
 
 	"github.com/alvii147/flagger-api/internal/flags"
+	"github.com/alvii147/flagger-api/pkg/testkit"
 )
 
 // MustCreateUserFlag creates and returns a new Flag for User and panics on error.
-func MustCreateUserFlag(t *testing.T, userUUID string, name string) *flags.Flag {
+func MustCreateUserFlag(t testkit.TestingT, userUUID string, name string) *flags.Flag {
 	dbPool := RequireCreateDatabasePool(t)
 	dbConn := RequireCreateDatabaseConn(t, dbPool, context.Background())
 	repo := flags.NewRepository()
