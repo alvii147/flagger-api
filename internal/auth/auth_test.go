@@ -106,7 +106,7 @@ func TestCreateAuthJWTSuccess(t *testing.T) {
 			require.NoError(t, err)
 
 			claims := &api.AuthJWTClaims{}
-			parsedToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
+			parsedToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
 				return []byte("deadbeef"), nil
 			})
 			require.NoError(t, err)
@@ -285,7 +285,7 @@ func TestCreateActivationJWTSuccess(t *testing.T) {
 	require.NoError(t, err)
 
 	claims := &api.ActivationJWTClaims{}
-	parsedToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
+	parsedToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
 		return []byte(secretKey), nil
 	})
 	require.NoError(t, err)
@@ -463,7 +463,7 @@ func TestSendActivationMail(t *testing.T) {
 
 	activationToken := matches[1]
 	claims := &api.ActivationJWTClaims{}
-	parsedToken, err := jwt.ParseWithClaims(activationToken, claims, func(t *jwt.Token) (interface{}, error) {
+	parsedToken, err := jwt.ParseWithClaims(activationToken, claims, func(t *jwt.Token) (any, error) {
 		return []byte(secretKey), nil
 	})
 	require.NoError(t, err)

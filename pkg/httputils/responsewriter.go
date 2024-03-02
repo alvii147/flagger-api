@@ -37,7 +37,7 @@ func (w *ResponseWriter) WriteHeader(statusCode int) {
 }
 
 // Header writes status code and JSON data to ResponseWriter.
-func (w *ResponseWriter) WriteJSON(data interface{}, statusCode int) {
+func (w *ResponseWriter) WriteJSON(data any, statusCode int) {
 	w.WriteHeader(statusCode)
 
 	if data != nil {

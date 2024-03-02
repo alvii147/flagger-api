@@ -77,7 +77,7 @@ func TestJWTAuthMiddleware(t *testing.T) {
 	).SignedString([]byte(secretKey))
 	require.NoError(t, err)
 
-	validResponse := map[string]interface{}{
+	validResponse := map[string]any{
 		"email":      testkit.GenerateFakeEmail(),
 		"first_name": testkit.MustGenerateRandomString(8, true, true, false),
 		"last_name":  testkit.MustGenerateRandomString(8, true, true, false),
@@ -193,7 +193,7 @@ func TestJWTAuthMiddleware(t *testing.T) {
 			responseBodyBytes, err := io.ReadAll(result.Body)
 			require.NoError(t, err)
 
-			var responseBody map[string]interface{}
+			var responseBody map[string]any
 			err = json.Unmarshal(responseBodyBytes, &responseBody)
 			require.NoError(t, err)
 
@@ -236,7 +236,7 @@ func TestAPIKeyAuthMiddleware(t *testing.T) {
 
 	_, validAPIKey := testkitinternal.MustCreateUserAPIKey(t, user.UUID, nil)
 
-	validResponse := map[string]interface{}{
+	validResponse := map[string]any{
 		"email":      user.Email,
 		"first_name": user.FirstName,
 		"last_name":  user.LastName,
@@ -325,7 +325,7 @@ func TestAPIKeyAuthMiddleware(t *testing.T) {
 			responseBodyBytes, err := io.ReadAll(result.Body)
 			require.NoError(t, err)
 
-			var responseBody map[string]interface{}
+			var responseBody map[string]any
 			err = json.Unmarshal(responseBodyBytes, &responseBody)
 			require.NoError(t, err)
 

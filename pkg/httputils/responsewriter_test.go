@@ -86,11 +86,11 @@ func TestResponseWriterWriteJSON(t *testing.T) {
 	rec := httptest.NewRecorder()
 	w := httputils.NewResponseWriter(rec)
 
-	data := map[string]interface{}{
+	data := map[string]any{
 		"number": float64(42),
 		"string": "Hello",
 		"null":   nil,
-		"listOfNumbers": []interface{}{
+		"listOfNumbers": []any{
 			float64(3),
 			float64(1),
 			float64(4),
@@ -101,7 +101,7 @@ func TestResponseWriterWriteJSON(t *testing.T) {
 
 	w.WriteJSON(data, http.StatusOK)
 
-	writtenData := make(map[string]interface{})
+	writtenData := make(map[string]any)
 	json.NewDecoder(rec.Body).Decode(&writtenData)
 
 	require.Equal(t, data["number"], writtenData["number"])

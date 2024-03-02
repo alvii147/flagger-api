@@ -43,7 +43,7 @@ func (immc *inMemClient) Send(
 	subject string,
 	textTmpl *texttemplate.Template,
 	htmlTmpl *htmltemplate.Template,
-	tmplData interface{},
+	tmplData any,
 ) error {
 	if immc.sendErr != nil {
 		return immc.sendErr

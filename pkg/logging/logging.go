@@ -21,10 +21,10 @@ func GetLongFileName() string {
 
 // Logger logs at debug, info, warn, and error levels.
 type Logger interface {
-	LogDebug(v ...interface{})
-	LogInfo(v ...interface{})
-	LogWarn(v ...interface{})
-	LogError(v ...interface{})
+	LogDebug(v ...any)
+	LogInfo(v ...any)
+	LogWarn(v ...any)
+	LogError(v ...any)
 }
 
 // logger implements Logger.
@@ -46,25 +46,25 @@ func NewLogger(stdout io.Writer, stderr io.Writer) *logger {
 }
 
 // LogDebug logs at debug level.
-func (l *logger) LogDebug(v ...interface{}) {
+func (l *logger) LogDebug(v ...any) {
 	longfile := GetLongFileName()
-	l.debugLogger.Println(append([]interface{}{longfile}, v...)...)
+	l.debugLogger.Println(append([]any{longfile}, v...)...)
 }
 
 // LogInfo logs at info level.
-func (l *logger) LogInfo(v ...interface{}) {
+func (l *logger) LogInfo(v ...any) {
 	longfile := GetLongFileName()
-	l.infoLogger.Println(append([]interface{}{longfile}, v...)...)
+	l.infoLogger.Println(append([]any{longfile}, v...)...)
 }
 
 // LogWarn logs at warn level.
-func (l *logger) LogWarn(v ...interface{}) {
+func (l *logger) LogWarn(v ...any) {
 	longfile := GetLongFileName()
-	l.warnLogger.Println(append([]interface{}{longfile}, v...)...)
+	l.warnLogger.Println(append([]any{longfile}, v...)...)
 }
 
 // LogError logs at error level.
-func (l *logger) LogError(v ...interface{}) {
+func (l *logger) LogError(v ...any) {
 	longfile := GetLongFileName()
-	l.errorLogger.Println(append([]interface{}{longfile}, v...)...)
+	l.errorLogger.Println(append([]any{longfile}, v...)...)
 }

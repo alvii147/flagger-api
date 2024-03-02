@@ -28,7 +28,7 @@ func (cmc *consoleClient) Send(
 	subject string,
 	textTmpl *texttemplate.Template,
 	htmlTmpl *htmltemplate.Template,
-	tmplData interface{},
+	tmplData any,
 ) error {
 	msg, err := BuildMail(cmc.username, to, subject, textTmpl, htmlTmpl, tmplData)
 	if err != nil {

@@ -83,7 +83,7 @@ func TestMustCreateUserAuthJWTs(t *testing.T) {
 	accessToken, refreshToken := testkitinternal.MustCreateUserAuthJWTs(userUUID)
 
 	accessClaims := &api.AuthJWTClaims{}
-	parsedAccessToken, err := jwt.ParseWithClaims(accessToken, accessClaims, func(t *jwt.Token) (interface{}, error) {
+	parsedAccessToken, err := jwt.ParseWithClaims(accessToken, accessClaims, func(t *jwt.Token) (any, error) {
 		return []byte(config.SecretKey), nil
 	})
 	require.NoError(t, err)
@@ -97,7 +97,7 @@ func TestMustCreateUserAuthJWTs(t *testing.T) {
 	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthAccessLifetime*int64(time.Minute))), time.Time(accessClaims.ExpiresAt))
 
 	refreshClaims := &api.AuthJWTClaims{}
-	parsedRefreshToken, err := jwt.ParseWithClaims(refreshToken, refreshClaims, func(t *jwt.Token) (interface{}, error) {
+	parsedRefreshToken, err := jwt.ParseWithClaims(refreshToken, refreshClaims, func(t *jwt.Token) (any, error) {
 		return []byte(config.SecretKey), nil
 	})
 	require.NoError(t, err)

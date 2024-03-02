@@ -25,7 +25,7 @@ type Client interface {
 		subject string,
 		textTmpl *texttemplate.Template,
 		htmlTmpl *htmltemplate.Template,
-		tmplData interface{},
+		tmplData any,
 	) error
 }
 
@@ -36,7 +36,7 @@ func BuildMail(
 	subject string,
 	textTmpl *texttemplate.Template,
 	htmlTmpl *htmltemplate.Template,
-	tmplData interface{},
+	tmplData any,
 ) ([]byte, error) {
 	boundary := uuid.NewString()
 

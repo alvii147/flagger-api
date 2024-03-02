@@ -112,7 +112,7 @@ func validateAuthJWT(token string, tokenType JWTType, secretKey string) (*api.Au
 	claims := &api.AuthJWTClaims{}
 	ok := true
 
-	parsedToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
+	parsedToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
 		return []byte(secretKey), nil
 	})
 
@@ -167,7 +167,7 @@ func validateActivationJWT(token string, secretKey string) (*api.ActivationJWTCl
 	claims := &api.ActivationJWTClaims{}
 	ok := true
 
-	parsedToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (interface{}, error) {
+	parsedToken, err := jwt.ParseWithClaims(token, claims, func(t *jwt.Token) (any, error) {
 		return []byte(secretKey), nil
 	})
 

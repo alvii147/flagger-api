@@ -680,7 +680,7 @@ func TestHandleCreateJWT(t *testing.T) {
 				require.NoError(t, err)
 
 				accessClaims := &api.AuthJWTClaims{}
-				parsedAccessToken, err := jwt.ParseWithClaims(createTokenResp.Access, accessClaims, func(t *jwt.Token) (interface{}, error) {
+				parsedAccessToken, err := jwt.ParseWithClaims(createTokenResp.Access, accessClaims, func(t *jwt.Token) (any, error) {
 					return []byte(config.SecretKey), nil
 				})
 				require.NoError(t, err)
@@ -694,7 +694,7 @@ func TestHandleCreateJWT(t *testing.T) {
 				testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(time.Duration(config.AuthAccessLifetime*int64(time.Minute))), time.Time(accessClaims.ExpiresAt))
 
 				refreshClaims := &api.AuthJWTClaims{}
-				parsedRefreshToken, err := jwt.ParseWithClaims(createTokenResp.Refresh, refreshClaims, func(t *jwt.Token) (interface{}, error) {
+				parsedRefreshToken, err := jwt.ParseWithClaims(createTokenResp.Refresh, refreshClaims, func(t *jwt.Token) (any, error) {
 					return []byte(config.SecretKey), nil
 				})
 				require.NoError(t, err)
@@ -800,7 +800,7 @@ func TestHandleRefreshJWT(t *testing.T) {
 				require.NoError(t, err)
 
 				claims := &api.AuthJWTClaims{}
-				parsedToken, err := jwt.ParseWithClaims(refreshTokenResp.Access, claims, func(t *jwt.Token) (interface{}, error) {
+				parsedToken, err := jwt.ParseWithClaims(refreshTokenResp.Access, claims, func(t *jwt.Token) (any, error) {
 					return []byte(config.SecretKey), nil
 				})
 				require.NoError(t, err)
