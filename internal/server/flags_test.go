@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strconv"
 	"testing"
 	"time"
@@ -126,16 +125,6 @@ func TestGetFlagNameParam(t *testing.T) {
 func TestFlagFlow(t *testing.T) {
 	t.Parallel()
 
-	ctrl, err := server.NewController()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := ctrl.Close()
-		require.NoError(t, err)
-	})
-
-	srv := httptest.NewServer(ctrl)
-	t.Cleanup(srv.Close)
-
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
 	}
@@ -149,7 +138,7 @@ func TestFlagFlow(t *testing.T) {
 
 	req, err := http.NewRequest(
 		http.MethodGet,
-		srv.URL+"/api/flags/my-flag",
+		TestServerURL+"/api/flags/my-flag",
 		http.NoBody,
 	)
 	require.NoError(t, err)
@@ -179,7 +168,7 @@ func TestFlagFlow(t *testing.T) {
 	`, flagName)
 	req, err = http.NewRequest(
 		http.MethodPost,
-		srv.URL+"/flags",
+		TestServerURL+"/flags",
 		bytes.NewReader([]byte(reqBody)),
 	)
 	require.NoError(t, err)
@@ -203,7 +192,7 @@ func TestFlagFlow(t *testing.T) {
 
 	req, err = http.NewRequest(
 		http.MethodGet,
-		srv.URL+"/flags",
+		TestServerURL+"/flags",
 		nil,
 	)
 	require.NoError(t, err)
@@ -232,7 +221,7 @@ func TestFlagFlow(t *testing.T) {
 	`
 	req, err = http.NewRequest(
 		http.MethodPut,
-		srv.URL+"/flags/"+strconv.Itoa(createFlagResp.ID),
+		TestServerURL+"/flags/"+strconv.Itoa(createFlagResp.ID),
 		bytes.NewReader([]byte(reqBody)),
 	)
 	require.NoError(t, err)
@@ -257,7 +246,7 @@ func TestFlagFlow(t *testing.T) {
 
 	req, err = http.NewRequest(
 		http.MethodGet,
-		srv.URL+"/flags/"+strconv.Itoa(updateFlagsResp.ID),
+		TestServerURL+"/flags/"+strconv.Itoa(updateFlagsResp.ID),
 		http.NoBody,
 	)
 	require.NoError(t, err)
@@ -281,7 +270,7 @@ func TestFlagFlow(t *testing.T) {
 
 	req, err = http.NewRequest(
 		http.MethodGet,
-		srv.URL+"/api/flags/"+getFlagByIDResp.Name,
+		TestServerURL+"/api/flags/"+getFlagByIDResp.Name,
 		http.NoBody,
 	)
 	require.NoError(t, err)

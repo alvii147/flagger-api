@@ -21,12 +21,7 @@ func main() {
 	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
 	go func() {
 		<-c
-		err := ctrl.Close()
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "failed to ctrl.Close: %v\n", err)
-			os.Exit(1)
-		}
-
+		ctrl.Close()
 		os.Exit(0)
 	}()
 

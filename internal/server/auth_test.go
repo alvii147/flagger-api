@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -82,16 +81,6 @@ func TestGetAPIKeyIDParam(t *testing.T) {
 
 func TestHandleCreateUser(t *testing.T) {
 	t.Parallel()
-
-	ctrl, err := server.NewController()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := ctrl.Close()
-		require.NoError(t, err)
-	})
-
-	srv := httptest.NewServer(ctrl)
-	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -270,7 +259,7 @@ func TestHandleCreateUser(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			req, err := http.NewRequest(
 				http.MethodPost,
-				srv.URL+"/auth/users",
+				TestServerURL+"/auth/users",
 				bytes.NewReader([]byte(testcase.requestBody)),
 			)
 			require.NoError(t, err)
@@ -311,16 +300,6 @@ func TestHandleActivateUser(t *testing.T) {
 
 	config, err := env.NewConfig()
 	require.NoError(t, err)
-
-	ctrl, err := server.NewController()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := ctrl.Close()
-		require.NoError(t, err)
-	})
-
-	srv := httptest.NewServer(ctrl)
-	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -417,7 +396,7 @@ func TestHandleActivateUser(t *testing.T) {
 
 			req, err := http.NewRequest(
 				http.MethodPost,
-				srv.URL+"/auth/users/activate",
+				TestServerURL+"/auth/users/activate",
 				bytes.NewReader([]byte(testcase.requestBody)),
 			)
 			require.NoError(t, err)
@@ -445,16 +424,6 @@ func TestHandleActivateUser(t *testing.T) {
 
 func TestHandleGetUserMe(t *testing.T) {
 	t.Parallel()
-
-	ctrl, err := server.NewController()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := ctrl.Close()
-		require.NoError(t, err)
-	})
-
-	srv := httptest.NewServer(ctrl)
-	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -541,7 +510,7 @@ func TestHandleGetUserMe(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
-			req, err := http.NewRequest(http.MethodGet, srv.URL+testcase.path, http.NoBody)
+			req, err := http.NewRequest(http.MethodGet, TestServerURL+testcase.path, http.NoBody)
 			require.NoError(t, err)
 
 			for key, value := range testcase.headers {
@@ -584,16 +553,6 @@ func TestHandleCreateJWT(t *testing.T) {
 
 	config, err := env.NewConfig()
 	require.NoError(t, err)
-
-	ctrl, err := server.NewController()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := ctrl.Close()
-		require.NoError(t, err)
-	})
-
-	srv := httptest.NewServer(ctrl)
-	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -701,7 +660,7 @@ func TestHandleCreateJWT(t *testing.T) {
 
 			req, err := http.NewRequest(
 				http.MethodPost,
-				srv.URL+"/auth/tokens",
+				TestServerURL+"/auth/tokens",
 				bytes.NewReader([]byte(testcase.requestBody)),
 			)
 			require.NoError(t, err)
@@ -765,16 +724,6 @@ func TestHandleRefreshJWT(t *testing.T) {
 	config, err := env.NewConfig()
 	require.NoError(t, err)
 
-	ctrl, err := server.NewController()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := ctrl.Close()
-		require.NoError(t, err)
-	})
-
-	srv := httptest.NewServer(ctrl)
-	t.Cleanup(srv.Close)
-
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
 	}
@@ -831,7 +780,7 @@ func TestHandleRefreshJWT(t *testing.T) {
 
 			req, err := http.NewRequest(
 				http.MethodPost,
-				srv.URL+"/auth/tokens/refresh",
+				TestServerURL+"/auth/tokens/refresh",
 				bytes.NewReader([]byte(testcase.requestBody)),
 			)
 			require.NoError(t, err)
@@ -877,16 +826,6 @@ func TestHandleRefreshJWT(t *testing.T) {
 
 func TestHandleCreateAPIKey(t *testing.T) {
 	t.Parallel()
-
-	ctrl, err := server.NewController()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := ctrl.Close()
-		require.NoError(t, err)
-	})
-
-	srv := httptest.NewServer(ctrl)
-	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -999,7 +938,7 @@ func TestHandleCreateAPIKey(t *testing.T) {
 
 			req, err := http.NewRequest(
 				http.MethodPost,
-				srv.URL+"/auth/api-keys",
+				TestServerURL+"/auth/api-keys",
 				bytes.NewReader([]byte(testcase.requestBody)),
 			)
 			require.NoError(t, err)
@@ -1044,16 +983,6 @@ func TestHandleCreateAPIKey(t *testing.T) {
 
 func TestHandleListAPIKeys(t *testing.T) {
 	t.Parallel()
-
-	ctrl, err := server.NewController()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := ctrl.Close()
-		require.NoError(t, err)
-	})
-
-	srv := httptest.NewServer(ctrl)
-	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -1116,7 +1045,7 @@ func TestHandleListAPIKeys(t *testing.T) {
 
 			req, err := http.NewRequest(
 				http.MethodGet,
-				srv.URL+"/auth/api-keys",
+				TestServerURL+"/auth/api-keys",
 				http.NoBody,
 			)
 			require.NoError(t, err)
@@ -1164,16 +1093,6 @@ func TestHandleListAPIKeys(t *testing.T) {
 
 func TestHandleDeleteAPIKey(t *testing.T) {
 	t.Parallel()
-
-	ctrl, err := server.NewController()
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		err := ctrl.Close()
-		require.NoError(t, err)
-	})
-
-	srv := httptest.NewServer(ctrl)
-	t.Cleanup(srv.Close)
 
 	httpClient := &http.Client{
 		Timeout: 60 * time.Second,
@@ -1249,7 +1168,7 @@ func TestHandleDeleteAPIKey(t *testing.T) {
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
-			req, err := http.NewRequest(http.MethodDelete, srv.URL+testcase.path, http.NoBody)
+			req, err := http.NewRequest(http.MethodDelete, TestServerURL+testcase.path, http.NoBody)
 			require.NoError(t, err)
 
 			for key, value := range testcase.headers {

@@ -20,7 +20,8 @@ import (
 // Controller handles server API operations.
 type Controller interface {
 	Serve() error
-	Close() error
+	ServeHTTP(w http.ResponseWriter, r *http.Request)
+	Close()
 }
 
 // controller implements Controller.
@@ -122,8 +123,7 @@ func (ctrl *controller) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 // Close closes the Controller and its connections.
-func (ctrl *controller) Close() error {
-	var err error
+func (ctrl *controller) Close() {
 	var wg sync.WaitGroup
 
 	wg.Add(1)
@@ -133,6 +133,4 @@ func (ctrl *controller) Close() error {
 	}()
 
 	wg.Wait()
-
-	return err
 }
