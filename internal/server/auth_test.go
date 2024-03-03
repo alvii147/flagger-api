@@ -82,9 +82,7 @@ func TestGetAPIKeyIDParam(t *testing.T) {
 func TestHandleCreateUser(t *testing.T) {
 	t.Parallel()
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	existingUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
@@ -301,9 +299,7 @@ func TestHandleActivateUser(t *testing.T) {
 	config, err := env.NewConfig()
 	require.NoError(t, err)
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
@@ -425,9 +421,7 @@ func TestHandleActivateUser(t *testing.T) {
 func TestHandleGetUserMe(t *testing.T) {
 	t.Parallel()
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
@@ -554,9 +548,7 @@ func TestHandleCreateJWT(t *testing.T) {
 	config, err := env.NewConfig()
 	require.NoError(t, err)
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	user, password := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
@@ -724,9 +716,7 @@ func TestHandleRefreshJWT(t *testing.T) {
 	config, err := env.NewConfig()
 	require.NoError(t, err)
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
@@ -827,9 +817,7 @@ func TestHandleRefreshJWT(t *testing.T) {
 func TestHandleCreateAPIKey(t *testing.T) {
 	t.Parallel()
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
@@ -984,9 +972,7 @@ func TestHandleCreateAPIKey(t *testing.T) {
 func TestHandleListAPIKeys(t *testing.T) {
 	t.Parallel()
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
@@ -1094,9 +1080,7 @@ func TestHandleListAPIKeys(t *testing.T) {
 func TestHandleDeleteAPIKey(t *testing.T) {
 	t.Parallel()
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true

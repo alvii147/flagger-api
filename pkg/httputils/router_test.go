@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"github.com/alvii147/flagger-api/pkg/httputils"
 	"github.com/stretchr/testify/require"
@@ -46,9 +45,7 @@ func TestRouterMethods(t *testing.T) {
 	srv := httptest.NewServer(router)
 	t.Cleanup(srv.Close)
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	testcases := []struct {
 		name           string
@@ -156,9 +153,7 @@ func TestRouterMiddleware(t *testing.T) {
 	srv := httptest.NewServer(router)
 	t.Cleanup(srv.Close)
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	req, err := http.NewRequest(
 		http.MethodGet,
@@ -193,9 +188,7 @@ func TestRouterPathParam(t *testing.T) {
 	srv := httptest.NewServer(router)
 	t.Cleanup(srv.Close)
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	req, err := http.NewRequest(
 		http.MethodGet,

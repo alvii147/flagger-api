@@ -126,9 +126,7 @@ func TestGetFlagNameParam(t *testing.T) {
 func TestHandleCreateFlag(t *testing.T) {
 	t.Parallel()
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
@@ -251,9 +249,7 @@ func TestHandleCreateFlag(t *testing.T) {
 func TestHandleGetFlagByID(t *testing.T) {
 	t.Parallel()
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
@@ -371,9 +367,7 @@ func TestHandleGetFlagByID(t *testing.T) {
 func TestHandleGetFlagByName(t *testing.T) {
 	t.Parallel()
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
@@ -522,9 +516,7 @@ func TestHandleGetFlagByName(t *testing.T) {
 func TestFlagFlow(t *testing.T) {
 	t.Parallel()
 
-	httpClient := &http.Client{
-		Timeout: 60 * time.Second,
-	}
+	httpClient := httputils.NewHTTPClient(nil)
 
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
