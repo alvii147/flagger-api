@@ -34,7 +34,6 @@ func TestValidateStringNotBlank(t *testing.T) {
 
 	field := "value"
 	for _, testcase := range testcases {
-		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -77,7 +76,6 @@ func TestValidateStringMaxLength(t *testing.T) {
 
 	field := "value"
 	for _, testcase := range testcases {
-		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -120,7 +118,6 @@ func TestValidateStringMinLength(t *testing.T) {
 
 	field := "value"
 	for _, testcase := range testcases {
-		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -160,7 +157,6 @@ func TestValidateStringEmail(t *testing.T) {
 
 	field := "value"
 	for _, testcase := range testcases {
-		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -205,7 +201,6 @@ func TestValidateStringSlug(t *testing.T) {
 
 	field := "value"
 	for _, testcase := range testcases {
-		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 

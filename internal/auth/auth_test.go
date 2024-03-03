@@ -40,12 +40,10 @@ func TestHashPassword(t *testing.T) {
 	}
 
 	for _, testcase := range testcases {
-		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
 			password := testkit.GenerateFakePassword()
-
 			hashedPassword, err := auth.HashPassword(password, testcase.hashingCost)
 
 			if testcase.wantErr {
@@ -90,12 +88,10 @@ func TestCreateAuthJWTSuccess(t *testing.T) {
 	}
 
 	for _, testcase := range testcases {
-		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
 			userUUID := uuid.NewString()
-
 			token, err := auth.CreateAuthJWT(
 				userUUID,
 				testcase.tokenType,
@@ -260,7 +256,6 @@ func TestValidateAuthJWT(t *testing.T) {
 	}
 
 	for _, testcase := range testcases {
-		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -398,7 +393,6 @@ func TestValidateActivationJWT(t *testing.T) {
 	}
 
 	for _, testcase := range testcases {
-		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -498,7 +492,6 @@ func TestCreateAPIKey(t *testing.T) {
 	}
 
 	for _, testcase := range testcases {
-		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -548,7 +541,6 @@ func TestParseAPIKey(t *testing.T) {
 	}
 
 	for _, testcase := range testcases {
-		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
 			t.Parallel()
 

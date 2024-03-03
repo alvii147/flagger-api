@@ -83,7 +83,6 @@ func TestLogTraffic(t *testing.T) {
 	}
 
 	for _, testcase := range testcases {
-		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
 			bufOut, bufErr, logger := testkit.CreateTestLogger()
 
@@ -195,7 +194,6 @@ func TestLoggerMiddleware(t *testing.T) {
 	}
 
 	for _, testcase := range testcases {
-		testcase := testcase
 		t.Run(testcase.name, func(t *testing.T) {
 			nextCallCount := 0
 			var next httputils.HandlerFunc = func(w *httputils.ResponseWriter, r *http.Request) {
