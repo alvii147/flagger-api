@@ -671,8 +671,8 @@ func TestServiceListAPIKeys(t *testing.T) {
 		require.Equal(t, wantKey.UserUUID, fetchedKey.UserUUID)
 		require.Equal(t, wantKey.Prefix, fetchedKey.Prefix)
 		require.Equal(t, wantKey.Name, fetchedKey.Name)
-		testkit.RequireTimeAlmostEqual(t, wantKey.CreatedAt, fetchedKey.CreatedAt)
-		testkit.RequirePGTimestampAlmostEqual(t, wantKey.ExpiresAt, fetchedKey.ExpiresAt)
+		require.Equal(t, wantKey.CreatedAt, fetchedKey.CreatedAt)
+		require.Equal(t, wantKey.ExpiresAt, fetchedKey.ExpiresAt)
 	}
 
 	for i, fetchedKey := range fetchedUser2Keys {
@@ -681,8 +681,8 @@ func TestServiceListAPIKeys(t *testing.T) {
 		require.Equal(t, wantKey.UserUUID, fetchedKey.UserUUID)
 		require.Equal(t, wantKey.Prefix, fetchedKey.Prefix)
 		require.Equal(t, wantKey.Name, fetchedKey.Name)
-		testkit.RequireTimeAlmostEqual(t, wantKey.CreatedAt, fetchedKey.CreatedAt)
-		testkit.RequirePGTimestampAlmostEqual(t, wantKey.ExpiresAt, fetchedKey.ExpiresAt)
+		require.Equal(t, wantKey.CreatedAt, fetchedKey.CreatedAt)
+		require.Equal(t, wantKey.ExpiresAt, fetchedKey.ExpiresAt)
 	}
 }
 
@@ -712,8 +712,8 @@ func TestServiceFindAPIKeySuccess(t *testing.T) {
 	require.Equal(t, apiKey.UserUUID, foundAPIKey.UserUUID)
 	require.Equal(t, apiKey.Prefix, foundAPIKey.Prefix)
 	require.Equal(t, apiKey.Name, foundAPIKey.Name)
-	testkit.RequireTimeAlmostEqual(t, apiKey.CreatedAt, foundAPIKey.CreatedAt)
-	testkit.RequirePGTimestampAlmostEqual(t, apiKey.ExpiresAt, foundAPIKey.ExpiresAt)
+	require.Equal(t, apiKey.CreatedAt, foundAPIKey.CreatedAt)
+	require.Equal(t, apiKey.ExpiresAt, foundAPIKey.ExpiresAt)
 }
 
 func TestServiceFindAPIKeyNotFound(t *testing.T) {

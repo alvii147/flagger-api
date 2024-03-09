@@ -83,8 +83,8 @@ func TestRepositoryGetFlagByIDSuccess(t *testing.T) {
 	require.Equal(t, flag.UserUUID, fetchedFlag.UserUUID)
 	require.Equal(t, flag.Name, fetchedFlag.Name)
 	require.False(t, fetchedFlag.IsEnabled)
-	testkit.RequireTimeAlmostEqual(t, flag.CreatedAt, fetchedFlag.CreatedAt)
-	testkit.RequireTimeAlmostEqual(t, flag.UpdatedAt, fetchedFlag.UpdatedAt)
+	require.Equal(t, flag.CreatedAt, fetchedFlag.CreatedAt)
+	require.Equal(t, flag.UpdatedAt, fetchedFlag.UpdatedAt)
 }
 
 func TestRepositoryGetFlagByIDError(t *testing.T) {
@@ -151,8 +151,8 @@ func TestRepositoryGetFlagByNameSuccess(t *testing.T) {
 	require.Equal(t, flag.UserUUID, fetchedFlag.UserUUID)
 	require.Equal(t, flag.Name, fetchedFlag.Name)
 	require.False(t, fetchedFlag.IsEnabled)
-	testkit.RequireTimeAlmostEqual(t, flag.CreatedAt, fetchedFlag.CreatedAt)
-	testkit.RequireTimeAlmostEqual(t, flag.UpdatedAt, fetchedFlag.UpdatedAt)
+	require.Equal(t, flag.CreatedAt, fetchedFlag.CreatedAt)
+	require.Equal(t, flag.UpdatedAt, fetchedFlag.UpdatedAt)
 }
 
 func TestRepositoryGetFlagByNameError(t *testing.T) {
@@ -232,8 +232,8 @@ func TestRepositoryListFlagsByUserUUIDSuccess(t *testing.T) {
 		require.Equal(t, wantFlag.UserUUID, flag.UserUUID)
 		require.Equal(t, wantFlag.Name, flag.Name)
 		require.Equal(t, wantFlag.IsEnabled, flag.IsEnabled)
-		testkit.RequireTimeAlmostEqual(t, wantFlag.CreatedAt, flag.CreatedAt)
-		testkit.RequireTimeAlmostEqual(t, wantFlag.UpdatedAt, flag.UpdatedAt)
+		require.Equal(t, wantFlag.CreatedAt, flag.CreatedAt)
+		require.Equal(t, wantFlag.UpdatedAt, flag.UpdatedAt)
 	}
 }
 

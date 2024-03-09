@@ -469,8 +469,8 @@ func TestRepositoryListAPIKeysByUserUUIDSuccess(t *testing.T) {
 		require.Equal(t, wantKey.UserUUID, apiKey.UserUUID)
 		require.Equal(t, wantKey.Prefix, apiKey.Prefix)
 		require.Equal(t, wantKey.Name, apiKey.Name)
-		testkit.RequireTimeAlmostEqual(t, wantKey.CreatedAt, apiKey.CreatedAt)
-		testkit.RequirePGTimestampAlmostEqual(t, wantKey.ExpiresAt, apiKey.ExpiresAt)
+		require.Equal(t, wantKey.CreatedAt, apiKey.CreatedAt)
+		require.Equal(t, wantKey.ExpiresAt, apiKey.ExpiresAt)
 	}
 }
 
@@ -522,7 +522,7 @@ func TestRepositoryListActiveAPIKeysByPrefixSuccess(t *testing.T) {
 	require.Equal(t, apiKey.Prefix, fetchedAPIKey.Prefix)
 	require.Equal(t, apiKey.HashedKey, fetchedAPIKey.HashedKey)
 	require.Equal(t, apiKey.Name, fetchedAPIKey.Name)
-	testkit.RequirePGTimestampAlmostEqual(t, apiKey.ExpiresAt, fetchedAPIKey.ExpiresAt)
+	require.Equal(t, apiKey.ExpiresAt, fetchedAPIKey.ExpiresAt)
 }
 
 func TestRepositoryListActiveAPIKeysByPrefixEmpty(t *testing.T) {

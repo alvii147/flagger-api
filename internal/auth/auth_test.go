@@ -1,9 +1,12 @@
 package auth_test
 
 import (
+	"errors"
 	"fmt"
+	htmltemplate "html/template"
 	"regexp"
 	"testing"
+	texttemplate "text/template"
 	"time"
 
 	"github.com/alvii147/flagger-api/internal/auth"
@@ -407,7 +410,7 @@ func TestValidateActivationJWT(t *testing.T) {
 	}
 }
 
-func TestSendActivationMail(t *testing.T) {
+func TestSendActivationMailSuccess(t *testing.T) {
 	t.Parallel()
 
 	user := &auth.User{
@@ -421,7 +424,6 @@ func TestSendActivationMail(t *testing.T) {
 	}
 
 	mailClient := mailclient.NewInMemClient("support@flagger.com")
-	mailCount := len(mailClient.Logs)
 	tmplManager := templatesmanager.NewManager()
 	frontendBaseURL := "http://localhost:3000"
 	frontendActivationRoute := "/signup/activate/%s"
@@ -437,7 +439,7 @@ func TestSendActivationMail(t *testing.T) {
 		lifetime,
 	)
 	require.NoError(t, err)
-	require.Len(t, mailClient.Logs, mailCount+1)
+	require.Len(t, mailClient.Logs, 1)
 
 	lastMail := mailClient.Logs[len(mailClient.Logs)-1]
 	require.Equal(t, []string{user.Email}, lastMail.To)
@@ -469,6 +471,82 @@ func TestSendActivationMail(t *testing.T) {
 
 	testkit.RequireTimeAlmostEqual(t, time.Now().UTC(), time.Time(claims.IssuedAt))
 	testkit.RequireTimeAlmostEqual(t, time.Now().UTC().Add(lifetime), time.Time(claims.ExpiresAt))
+}
+
+func TestSendActivationMailSendError(t *testing.T) {
+	t.Parallel()
+
+	user := &auth.User{
+		UUID:        uuid.NewString(),
+		Email:       testkit.GenerateFakeEmail(),
+		Password:    testkitinternal.MustHashPassword(testkit.GenerateFakePassword()),
+		FirstName:   testkit.MustGenerateRandomString(8, true, true, false),
+		LastName:    testkit.MustGenerateRandomString(8, true, true, false),
+		IsActive:    true,
+		IsSuperUser: false,
+	}
+
+	mailClient := mailclient.NewInMemClient("support@flagger.com")
+	mailErr := errors.New("Send failed")
+	mailClient.SetSendError(mailErr)
+
+	tmplManager := templatesmanager.NewManager()
+	frontendBaseURL := "http://localhost:3000"
+	frontendActivationRoute := "/signup/activate/%s"
+	secretKey := "deadbeef"
+	lifetime := time.Hour
+
+	err := auth.SendActivationMail(
+		user,
+		mailClient,
+		tmplManager,
+		frontendBaseURL,
+		frontendActivationRoute,
+		secretKey,
+		lifetime,
+	)
+	require.ErrorIs(t, err, mailErr)
+}
+
+var errTmplLoad = errors.New("Load failed")
+
+type errTmplManager struct{}
+
+func (m *errTmplManager) Load(name string) (*texttemplate.Template, *htmltemplate.Template, error) {
+	return nil, nil, errTmplLoad
+}
+
+func TestSendActivationMailTemplatesError(t *testing.T) {
+	t.Parallel()
+
+	user := &auth.User{
+		UUID:        uuid.NewString(),
+		Email:       testkit.GenerateFakeEmail(),
+		Password:    testkitinternal.MustHashPassword(testkit.GenerateFakePassword()),
+		FirstName:   testkit.MustGenerateRandomString(8, true, true, false),
+		LastName:    testkit.MustGenerateRandomString(8, true, true, false),
+		IsActive:    true,
+		IsSuperUser: false,
+	}
+
+	mailClient := mailclient.NewInMemClient("support@flagger.com")
+	tmplManager := &errTmplManager{}
+	frontendBaseURL := "http://localhost:3000"
+	frontendActivationRoute := "/signup/activate/%s"
+	secretKey := "deadbeef"
+	lifetime := time.Hour
+
+	err := auth.SendActivationMail(
+		user,
+		mailClient,
+		tmplManager,
+		frontendBaseURL,
+		frontendActivationRoute,
+		secretKey,
+		lifetime,
+	)
+	require.ErrorIs(t, err, errTmplLoad)
+	require.Len(t, mailClient.Logs, 0)
 }
 
 func TestCreateAPIKey(t *testing.T) {

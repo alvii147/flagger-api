@@ -78,8 +78,8 @@ func TestServiceGetFlagByIDSuccess(t *testing.T) {
 	require.Equal(t, user.UUID, fetchedFlag.UserUUID)
 	require.Equal(t, flag.Name, fetchedFlag.Name)
 	require.Equal(t, flag.IsEnabled, fetchedFlag.IsEnabled)
-	testkit.RequireTimeAlmostEqual(t, flag.CreatedAt, fetchedFlag.CreatedAt)
-	testkit.RequireTimeAlmostEqual(t, flag.UpdatedAt, fetchedFlag.UpdatedAt)
+	require.Equal(t, flag.CreatedAt, fetchedFlag.CreatedAt)
+	require.Equal(t, flag.UpdatedAt, fetchedFlag.UpdatedAt)
 }
 
 func TestServiceGetFlagByIDError(t *testing.T) {
@@ -171,8 +171,8 @@ func TestServiceGetFlagByNameSuccess(t *testing.T) {
 	require.Equal(t, user.UUID, fetchedFlag.UserUUID)
 	require.Equal(t, flag.Name, fetchedFlag.Name)
 	require.Equal(t, flag.IsEnabled, fetchedFlag.IsEnabled)
-	testkit.RequireTimeAlmostEqual(t, flag.CreatedAt, fetchedFlag.CreatedAt)
-	testkit.RequireTimeAlmostEqual(t, flag.UpdatedAt, fetchedFlag.UpdatedAt)
+	require.Equal(t, flag.CreatedAt, fetchedFlag.CreatedAt)
+	require.Equal(t, flag.UpdatedAt, fetchedFlag.UpdatedAt)
 }
 
 func TestServiceGetFlagByNameError(t *testing.T) {
@@ -289,8 +289,8 @@ func TestServiceListFlags(t *testing.T) {
 		require.Equal(t, wantFlag.UserUUID, fetchedFlag.UserUUID)
 		require.Equal(t, wantFlag.Name, fetchedFlag.Name)
 		require.Equal(t, wantFlag.IsEnabled, fetchedFlag.IsEnabled)
-		testkit.RequireTimeAlmostEqual(t, wantFlag.CreatedAt, fetchedFlag.CreatedAt)
-		testkit.RequireTimeAlmostEqual(t, wantFlag.UpdatedAt, fetchedFlag.UpdatedAt)
+		require.Equal(t, wantFlag.CreatedAt, fetchedFlag.CreatedAt)
+		require.Equal(t, wantFlag.UpdatedAt, fetchedFlag.UpdatedAt)
 	}
 
 	for i, fetchedFlag := range fetchedUser2Flags {
@@ -299,8 +299,8 @@ func TestServiceListFlags(t *testing.T) {
 		require.Equal(t, wantFlag.UserUUID, fetchedFlag.UserUUID)
 		require.Equal(t, wantFlag.Name, fetchedFlag.Name)
 		require.Equal(t, wantFlag.IsEnabled, fetchedFlag.IsEnabled)
-		testkit.RequireTimeAlmostEqual(t, wantFlag.CreatedAt, fetchedFlag.CreatedAt)
-		testkit.RequireTimeAlmostEqual(t, wantFlag.UpdatedAt, fetchedFlag.UpdatedAt)
+		require.Equal(t, wantFlag.CreatedAt, fetchedFlag.CreatedAt)
+		require.Equal(t, wantFlag.UpdatedAt, fetchedFlag.UpdatedAt)
 	}
 }
 
@@ -320,6 +320,7 @@ func TestServiceUpdateFlagSuccess(t *testing.T) {
 
 	updatedIsEnabled := true
 
+	updatedAt := time.Now().UTC()
 	ctx := context.WithValue(context.Background(), auth.AuthContextKeyUserUUID, user.UUID)
 	updatedFlag, err := svc.UpdateFlag(ctx, flag.ID, updatedIsEnabled)
 	require.NoError(t, err)
@@ -328,8 +329,9 @@ func TestServiceUpdateFlagSuccess(t *testing.T) {
 	require.Equal(t, user.UUID, updatedFlag.UserUUID)
 	require.Equal(t, flagName, updatedFlag.Name)
 	require.Equal(t, updatedIsEnabled, updatedFlag.IsEnabled)
-	testkit.RequireTimeAlmostEqual(t, flag.CreatedAt, updatedFlag.CreatedAt)
-	testkit.RequireTimeAlmostEqual(t, flag.UpdatedAt, updatedFlag.UpdatedAt)
+	require.Equal(t, flag.CreatedAt, updatedFlag.CreatedAt)
+	testkit.RequireTimeAlmostEqual(t, updatedAt, updatedFlag.UpdatedAt)
+
 }
 
 func TestServiceUpdateFlagError(t *testing.T) {

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
 )
 
@@ -26,14 +25,4 @@ func RequireTimeAlmostEqual(t TestingT, expected time.Time, actual time.Time) {
 		actual.Before(expected.Add(TimeEqualityTolerance)),
 		fmt.Sprintf("actual time %s occurs more than %s after expected time %s", actualISO, TimeEqualityTolerance, expectedISO),
 	)
-}
-
-// RequirePGTimestampAlmostEqual requires that expected and actual PostgreSQL timestamps
-// are within at most 5 seconds of each other.
-func RequirePGTimestampAlmostEqual(t TestingT, expected pgtype.Timestamp, actual pgtype.Timestamp) {
-	require.Equal(t, expected.Valid, actual.Valid)
-
-	if expected.Valid {
-		RequireTimeAlmostEqual(t, expected.Time, actual.Time)
-	}
 }

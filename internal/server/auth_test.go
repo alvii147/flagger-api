@@ -525,7 +525,7 @@ func TestHandleGetUserMe(t *testing.T) {
 				require.Equal(t, testcase.user.Email, getUserMeResp.Email)
 				require.Equal(t, testcase.user.FirstName, getUserMeResp.FirstName)
 				require.Equal(t, testcase.user.LastName, getUserMeResp.LastName)
-				testkit.RequireTimeAlmostEqual(t, testcase.user.CreatedAt, getUserMeResp.CreatedAt)
+				require.Equal(t, testcase.user.CreatedAt, getUserMeResp.CreatedAt)
 			} else {
 				var errResp api.ErrorResponse
 				err = json.NewDecoder(res.Body).Decode(&errResp)
@@ -827,7 +827,7 @@ func TestHandleCreateAPIKey(t *testing.T) {
 		requestBody        string
 		wantStatusCode     int
 		wantAPIKeyName     string
-		wantExpirationDate bool
+		wantExpirationDate pgtype.Timestamp
 		wantErrCode        string
 		wantErrDetail      string
 	}{
@@ -841,11 +841,13 @@ func TestHandleCreateAPIKey(t *testing.T) {
 					"name": "My non-expiring API key"
 				}
 			`,
-			wantStatusCode:     http.StatusCreated,
-			wantAPIKeyName:     "My non-expiring API key",
-			wantExpirationDate: false,
-			wantErrCode:        "",
-			wantErrDetail:      "",
+			wantStatusCode: http.StatusCreated,
+			wantAPIKeyName: "My non-expiring API key",
+			wantExpirationDate: pgtype.Timestamp{
+				Valid: false,
+			},
+			wantErrCode:   "",
+			wantErrDetail: "",
 		},
 		{
 			name: "Valid request with expiration date",
@@ -858,11 +860,14 @@ func TestHandleCreateAPIKey(t *testing.T) {
 					"expires_at": "%s"
 				}
 			`, expirationDateString),
-			wantStatusCode:     http.StatusCreated,
-			wantAPIKeyName:     "My expiring API key",
-			wantExpirationDate: true,
-			wantErrCode:        "",
-			wantErrDetail:      "",
+			wantStatusCode: http.StatusCreated,
+			wantAPIKeyName: "My expiring API key",
+			wantExpirationDate: pgtype.Timestamp{
+				Time:  expirationDate,
+				Valid: true,
+			},
+			wantErrCode:   "",
+			wantErrDetail: "",
 		},
 		{
 			name: "Name missing",
@@ -874,11 +879,14 @@ func TestHandleCreateAPIKey(t *testing.T) {
 					"expires_at": "%s"
 				}
 			`, expirationDateString),
-			wantStatusCode:     http.StatusBadRequest,
-			wantAPIKeyName:     "My nameless API key",
-			wantExpirationDate: true,
-			wantErrCode:        api.ErrCodeInvalidRequest,
-			wantErrDetail:      api.ErrDetailInvalidRequestData,
+			wantStatusCode: http.StatusBadRequest,
+			wantAPIKeyName: "My nameless API key",
+			wantExpirationDate: pgtype.Timestamp{
+				Time:  expirationDate,
+				Valid: true,
+			},
+			wantErrCode:   api.ErrCodeInvalidRequest,
+			wantErrDetail: api.ErrDetailInvalidRequestData,
 		},
 		{
 			name: "Invalid expiration date",
@@ -891,11 +899,13 @@ func TestHandleCreateAPIKey(t *testing.T) {
 					"expires_at": "1nv4l1dd4t3"
 				}
 			`,
-			wantStatusCode:     http.StatusBadRequest,
-			wantAPIKeyName:     "My invalidly-expiring API key",
-			wantExpirationDate: false,
-			wantErrCode:        api.ErrCodeInvalidRequest,
-			wantErrDetail:      api.ErrDetailInvalidRequestData,
+			wantStatusCode: http.StatusBadRequest,
+			wantAPIKeyName: "My invalidly-expiring API key",
+			wantExpirationDate: pgtype.Timestamp{
+				Valid: false,
+			},
+			wantErrCode:   api.ErrCodeInvalidRequest,
+			wantErrDetail: api.ErrDetailInvalidRequestData,
 		},
 		{
 			name:    "Unauthenticated request",
@@ -905,11 +915,13 @@ func TestHandleCreateAPIKey(t *testing.T) {
 					"name": "My unauthenticated API key"
 				}
 			`,
-			wantStatusCode:     http.StatusUnauthorized,
-			wantAPIKeyName:     "My unauthenticated API key",
-			wantExpirationDate: false,
-			wantErrCode:        api.ErrCodeMissingCredentials,
-			wantErrDetail:      api.ErrDetailMissingCredentials,
+			wantStatusCode: http.StatusUnauthorized,
+			wantAPIKeyName: "My unauthenticated API key",
+			wantExpirationDate: pgtype.Timestamp{
+				Valid: false,
+			},
+			wantErrCode:   api.ErrCodeMissingCredentials,
+			wantErrDetail: api.ErrDetailMissingCredentials,
 		},
 	}
 
@@ -946,10 +958,10 @@ func TestHandleCreateAPIKey(t *testing.T) {
 				require.Equal(t, user.UUID, createAPIKeyResp.UserUUID)
 				require.Equal(t, testcase.wantAPIKeyName, createAPIKeyResp.Name)
 				testkit.RequireTimeAlmostEqual(t, apiKeyCreatedAt, createAPIKeyResp.CreatedAt)
-				testkit.RequirePGTimestampAlmostEqual(t, pgtype.Timestamp{
-					Time:  expirationDate,
-					Valid: testcase.wantExpirationDate,
-				}, createAPIKeyResp.ExpiresAt)
+				require.Equal(t, testcase.wantExpirationDate.Valid, createAPIKeyResp.ExpiresAt.Valid)
+				if testcase.wantExpirationDate.Valid {
+					require.Equal(t, testcase.wantExpirationDate, createAPIKeyResp.ExpiresAt)
+				}
 			} else {
 				var errResp api.ErrorResponse
 				err = json.NewDecoder(res.Body).Decode(&errResp)
@@ -1052,8 +1064,8 @@ func TestHandleListAPIKeys(t *testing.T) {
 					require.Equal(t, activeUser.UUID, listAPIKeysResp.Keys[0].UserUUID)
 					require.True(t, strings.HasPrefix(activeUserRawAPIKey, listAPIKeysResp.Keys[0].Prefix))
 					require.Equal(t, activeUserAPIKey.Name, listAPIKeysResp.Keys[0].Name)
-					testkit.RequireTimeAlmostEqual(t, activeUserAPIKey.CreatedAt, listAPIKeysResp.Keys[0].CreatedAt)
-					testkit.RequirePGTimestampAlmostEqual(t, activeUserAPIKey.ExpiresAt, listAPIKeysResp.Keys[0].ExpiresAt)
+					require.Equal(t, activeUserAPIKey.CreatedAt, listAPIKeysResp.Keys[0].CreatedAt)
+					require.Equal(t, activeUserAPIKey.ExpiresAt, listAPIKeysResp.Keys[0].ExpiresAt)
 				} else {
 					require.Len(t, listAPIKeysResp.Keys, 0)
 				}

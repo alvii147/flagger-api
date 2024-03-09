@@ -5,17 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strconv"
+	"sort"
 	"testing"
 	"time"
 
 	"github.com/alvii147/flagger-api/internal/auth"
+	"github.com/alvii147/flagger-api/internal/flags"
 	"github.com/alvii147/flagger-api/internal/server"
 	"github.com/alvii147/flagger-api/internal/testkitinternal"
 	"github.com/alvii147/flagger-api/pkg/api"
 	"github.com/alvii147/flagger-api/pkg/httputils"
 	"github.com/alvii147/flagger-api/pkg/testkit"
-	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/stretchr/testify/require"
 )
 
@@ -346,8 +346,8 @@ func TestHandleGetFlagByID(t *testing.T) {
 				require.Equal(t, activeUser.UUID, getFlagByIDResp.UserUUID)
 				require.Equal(t, activeUserFlag.Name, getFlagByIDResp.Name)
 				require.Equal(t, activeUserFlag.IsEnabled, getFlagByIDResp.IsEnabled)
-				testkit.RequireTimeAlmostEqual(t, activeUserFlag.CreatedAt, getFlagByIDResp.CreatedAt)
-				testkit.RequireTimeAlmostEqual(t, activeUserFlag.UpdatedAt, getFlagByIDResp.UpdatedAt)
+				require.Equal(t, activeUserFlag.CreatedAt, getFlagByIDResp.CreatedAt)
+				require.Equal(t, activeUserFlag.UpdatedAt, getFlagByIDResp.UpdatedAt)
 			} else {
 				var errResp api.ErrorResponse
 				err = json.NewDecoder(res.Body).Decode(&errResp)
@@ -480,14 +480,10 @@ func TestHandleGetFlagByName(t *testing.T) {
 					require.NotNil(t, getFlagByNameResp.UserUUID)
 					require.Equal(t, activeUser.UUID, *getFlagByNameResp.UserUUID)
 					require.Equal(t, activeUserFlag.IsEnabled, getFlagByNameResp.IsEnabled)
-					testkit.RequirePGTimestampAlmostEqual(t, pgtype.Timestamp{
-						Time:  activeUserFlag.CreatedAt,
-						Valid: true,
-					}, getFlagByNameResp.CreatedAt)
-					testkit.RequirePGTimestampAlmostEqual(t, pgtype.Timestamp{
-						Time:  activeUserFlag.UpdatedAt,
-						Valid: true,
-					}, getFlagByNameResp.UpdatedAt)
+					require.True(t, getFlagByNameResp.CreatedAt.Valid)
+					require.Equal(t, activeUserFlag.CreatedAt, getFlagByNameResp.CreatedAt.Time)
+					require.True(t, getFlagByNameResp.UpdatedAt.Valid)
+					require.Equal(t, activeUserFlag.UpdatedAt, getFlagByNameResp.UpdatedAt.Time)
 				} else {
 					require.Nil(t, getFlagByNameResp.ID)
 					require.Nil(t, getFlagByNameResp.UserUUID)
@@ -508,186 +504,286 @@ func TestHandleGetFlagByName(t *testing.T) {
 	}
 }
 
-func TestFlagFlow(t *testing.T) {
+func TestHandleListFlags(t *testing.T) {
 	t.Parallel()
 
 	httpClient := httputils.NewHTTPClient(nil)
 
-	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
 		u.IsActive = true
 	})
-	accessToken, _ := testkitinternal.MustCreateUserAuthJWTs(user.UUID)
+	activeUserAccessJWT, _ := testkitinternal.MustCreateUserAuthJWTs(activeUser.UUID)
+	activeUserFlag1 := testkitinternal.MustCreateUserFlag(t, activeUser.UUID, "active-user-flag-1")
+	activeUserFlag2 := testkitinternal.MustCreateUserFlag(t, activeUser.UUID, "active-user-flag-2")
 
-	_, rawKey := testkitinternal.MustCreateUserAPIKey(t, user.UUID, nil)
+	inactiveUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = false
+	})
+	inactiveUserAccessJWT, _ := testkitinternal.MustCreateUserAuthJWTs(inactiveUser.UUID)
+	testkitinternal.MustCreateUserFlag(t, inactiveUser.UUID, "inactive-user-flag-1")
 
-	req, err := http.NewRequest(
-		http.MethodGet,
-		TestServerURL+"/api/flags/my-flag",
-		http.NoBody,
-	)
-	require.NoError(t, err)
-	req.Header.Set("Authorization", fmt.Sprintf("X-API-Key %s", rawKey))
-
-	res, err := httpClient.Do(req)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, res.StatusCode)
-
-	defer res.Body.Close()
-	var getFlagByNameResp api.GetFlagByNameResponse
-	err = json.NewDecoder(res.Body).Decode(&getFlagByNameResp)
-	require.NoError(t, err)
-
-	require.Nil(t, getFlagByNameResp.ID)
-	require.Nil(t, getFlagByNameResp.UserUUID)
-	require.Equal(t, "my-flag", getFlagByNameResp.Name)
-	require.False(t, getFlagByNameResp.IsEnabled)
-	require.False(t, getFlagByNameResp.CreatedAt.Valid)
-	require.False(t, getFlagByNameResp.UpdatedAt.Valid)
-
-	flagName := "my-flag"
-	reqBody := fmt.Sprintf(`
+	testcases := []struct {
+		name           string
+		headers        map[string]string
+		wantStatusCode int
+		wantFlags      []*flags.Flag
+		wantErrCode    string
+		wantErrDetail  string
+	}{
 		{
-			"name": "%s"
-		}
-	`, flagName)
-	req, err = http.NewRequest(
-		http.MethodPost,
-		TestServerURL+"/flags",
-		bytes.NewReader([]byte(reqBody)),
-	)
-	require.NoError(t, err)
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-
-	flagCreatedAt := time.Now().UTC()
-	res, err = httpClient.Do(req)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusCreated, res.StatusCode)
-
-	defer res.Body.Close()
-	var createFlagResp api.CreateFlagResponse
-	err = json.NewDecoder(res.Body).Decode(&createFlagResp)
-	require.NoError(t, err)
-
-	require.Equal(t, user.UUID, createFlagResp.UserUUID)
-	require.Equal(t, flagName, createFlagResp.Name)
-	require.False(t, createFlagResp.IsEnabled)
-	testkit.RequireTimeAlmostEqual(t, flagCreatedAt, createFlagResp.CreatedAt)
-	testkit.RequireTimeAlmostEqual(t, flagCreatedAt, createFlagResp.UpdatedAt)
-
-	req, err = http.NewRequest(
-		http.MethodGet,
-		TestServerURL+"/flags",
-		nil,
-	)
-	require.NoError(t, err)
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-
-	res, err = httpClient.Do(req)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, res.StatusCode)
-
-	defer res.Body.Close()
-	var listFlagsResp api.ListFlagsResponse
-	err = json.NewDecoder(res.Body).Decode(&listFlagsResp)
-	require.NoError(t, err)
-
-	require.Len(t, listFlagsResp.Flags, 1)
-	require.Equal(t, user.UUID, listFlagsResp.Flags[0].UserUUID)
-	require.Equal(t, flagName, listFlagsResp.Flags[0].Name)
-	require.False(t, listFlagsResp.Flags[0].IsEnabled)
-	testkit.RequireTimeAlmostEqual(t, flagCreatedAt, listFlagsResp.Flags[0].CreatedAt)
-	testkit.RequireTimeAlmostEqual(t, flagCreatedAt, listFlagsResp.Flags[0].UpdatedAt)
-
-	reqBody = `
+			name: "List active user flags",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", activeUserAccessJWT),
+			},
+			wantStatusCode: http.StatusOK,
+			wantFlags: []*flags.Flag{
+				activeUserFlag1,
+				activeUserFlag2,
+			},
+			wantErrCode:   "",
+			wantErrDetail: "",
+		},
 		{
-			"is_enabled": true
-		}
-	`
-	req, err = http.NewRequest(
-		http.MethodPut,
-		TestServerURL+"/flags/"+strconv.Itoa(createFlagResp.ID),
-		bytes.NewReader([]byte(reqBody)),
-	)
-	require.NoError(t, err)
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-
-	flagUpdatedAt := time.Now().UTC()
-	res, err = httpClient.Do(req)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, res.StatusCode)
-
-	defer res.Body.Close()
-	var updateFlagsResp api.UpdateFlagResponse
-	err = json.NewDecoder(res.Body).Decode(&updateFlagsResp)
-	require.NoError(t, err)
-
-	require.Equal(t, createFlagResp.ID, updateFlagsResp.ID)
-	require.Equal(t, user.UUID, updateFlagsResp.UserUUID)
-	require.Equal(t, flagName, updateFlagsResp.Name)
-	require.True(t, updateFlagsResp.IsEnabled)
-	testkit.RequireTimeAlmostEqual(t, createFlagResp.CreatedAt, updateFlagsResp.CreatedAt)
-	testkit.RequireTimeAlmostEqual(t, flagUpdatedAt, updateFlagsResp.UpdatedAt)
-
-	req, err = http.NewRequest(
-		http.MethodGet,
-		TestServerURL+"/flags/"+strconv.Itoa(updateFlagsResp.ID),
-		http.NoBody,
-	)
-	require.NoError(t, err)
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", accessToken))
-
-	res, err = httpClient.Do(req)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, res.StatusCode)
-
-	defer res.Body.Close()
-	var getFlagByIDResp api.GetFlagByIDResponse
-	err = json.NewDecoder(res.Body).Decode(&getFlagByIDResp)
-	require.NoError(t, err)
-
-	require.Equal(t, updateFlagsResp.ID, getFlagByIDResp.ID)
-	require.Equal(t, user.UUID, getFlagByIDResp.UserUUID)
-	require.Equal(t, updateFlagsResp.Name, getFlagByIDResp.Name)
-	require.True(t, getFlagByIDResp.IsEnabled)
-	testkit.RequireTimeAlmostEqual(t, updateFlagsResp.CreatedAt, getFlagByIDResp.CreatedAt)
-	testkit.RequireTimeAlmostEqual(t, updateFlagsResp.UpdatedAt, getFlagByIDResp.UpdatedAt)
-
-	req, err = http.NewRequest(
-		http.MethodGet,
-		TestServerURL+"/api/flags/"+getFlagByIDResp.Name,
-		http.NoBody,
-	)
-	require.NoError(t, err)
-	req.Header.Set("Authorization", fmt.Sprintf("X-API-Key %s", rawKey))
-
-	res, err = httpClient.Do(req)
-	require.NoError(t, err)
-	require.Equal(t, http.StatusOK, res.StatusCode)
-
-	defer res.Body.Close()
-	err = json.NewDecoder(res.Body).Decode(&getFlagByNameResp)
-	require.NoError(t, err)
-
-	require.NotNil(t, getFlagByNameResp.ID)
-	require.Equal(t, getFlagByIDResp.ID, *getFlagByNameResp.ID)
-	require.NotNil(t, getFlagByNameResp.UserUUID)
-	require.Equal(t, user.UUID, *getFlagByNameResp.UserUUID)
-	require.Equal(t, getFlagByIDResp.Name, getFlagByNameResp.Name)
-	require.True(t, getFlagByNameResp.IsEnabled)
-	testkit.RequirePGTimestampAlmostEqual(
-		t,
-		pgtype.Timestamp{
-			Time:  getFlagByIDResp.CreatedAt,
-			Valid: true,
+			name: "List inactive user flags returns no flags",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", inactiveUserAccessJWT),
+			},
+			wantStatusCode: http.StatusOK,
+			wantFlags:      []*flags.Flag{},
+			wantErrCode:    "",
+			wantErrDetail:  "",
 		},
-		getFlagByNameResp.CreatedAt,
-	)
-	testkit.RequirePGTimestampAlmostEqual(
-		t,
-		pgtype.Timestamp{
-			Time:  getFlagByIDResp.UpdatedAt,
-			Valid: true,
+		{
+			name:           "List flags without authentication",
+			headers:        map[string]string{},
+			wantStatusCode: http.StatusUnauthorized,
+			wantFlags:      []*flags.Flag{},
+			wantErrCode:    api.ErrCodeMissingCredentials,
+			wantErrDetail:  api.ErrDetailMissingCredentials,
 		},
-		getFlagByNameResp.UpdatedAt,
-	)
+	}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			req, err := http.NewRequest(http.MethodGet, TestServerURL+"/flags", http.NoBody)
+			require.NoError(t, err)
+
+			for key, value := range testcase.headers {
+				req.Header.Add(key, value)
+			}
+
+			res, err := httpClient.Do(req)
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			})
+
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+
+			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
+				var listFlagsResp api.ListFlagsResponse
+				err = json.NewDecoder(res.Body).Decode(&listFlagsResp)
+				require.NoError(t, err)
+				require.Len(t, listFlagsResp.Flags, len(testcase.wantFlags))
+
+				sort.Slice(listFlagsResp.Flags, func(i, j int) bool {
+					return listFlagsResp.Flags[i].Name < listFlagsResp.Flags[j].Name
+				})
+
+				sort.Slice(testcase.wantFlags, func(i, j int) bool {
+					return testcase.wantFlags[i].Name < testcase.wantFlags[j].Name
+				})
+
+				for i, listedFlag := range listFlagsResp.Flags {
+					wantFlag := testcase.wantFlags[i]
+					require.Equal(t, wantFlag.ID, listedFlag.ID)
+					require.Equal(t, wantFlag.UserUUID, listedFlag.UserUUID)
+					require.Equal(t, wantFlag.Name, listedFlag.Name)
+					require.Equal(t, wantFlag.IsEnabled, listedFlag.IsEnabled)
+					require.Equal(t, wantFlag.CreatedAt, listedFlag.CreatedAt)
+					require.Equal(t, wantFlag.UpdatedAt, listedFlag.UpdatedAt)
+				}
+			} else {
+				var errResp api.ErrorResponse
+				err = json.NewDecoder(res.Body).Decode(&errResp)
+				require.NoError(t, err)
+
+				require.Equal(t, testcase.wantErrCode, errResp.Code)
+				require.Equal(t, testcase.wantErrDetail, errResp.Detail)
+			}
+		})
+	}
+}
+
+func TestHandleUpdateFlag(t *testing.T) {
+	t.Parallel()
+
+	httpClient := httputils.NewHTTPClient(nil)
+
+	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = true
+	})
+	activeUserAccessJWT, _ := testkitinternal.MustCreateUserAuthJWTs(activeUser.UUID)
+	activeUserFlag := testkitinternal.MustCreateUserFlag(t, activeUser.UUID, "active-user-flag")
+
+	inactiveUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = false
+	})
+	inactiveUserAccessJWT, _ := testkitinternal.MustCreateUserAuthJWTs(inactiveUser.UUID)
+	inactiveUserFlag := testkitinternal.MustCreateUserFlag(t, inactiveUser.UUID, "inactive-user-flag-1")
+
+	testcases := []struct {
+		name           string
+		path           string
+		headers        map[string]string
+		requestBody    string
+		wantStatusCode int
+		wantIsEnabled  bool
+		wantErrCode    string
+		wantErrDetail  string
+	}{
+		{
+			name: "Update flag for active user",
+			path: fmt.Sprintf("/flags/%d", activeUserFlag.ID),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", activeUserAccessJWT),
+			},
+			requestBody: `
+				{
+					"is_enabled": true
+				}
+			`,
+			wantStatusCode: http.StatusOK,
+			wantIsEnabled:  true,
+			wantErrCode:    "",
+			wantErrDetail:  "",
+		},
+		{
+			name: "Update flag for inactive user",
+			path: fmt.Sprintf("/flags/%d", inactiveUserFlag.ID),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", inactiveUserAccessJWT),
+			},
+			requestBody: `
+				{
+					"is_enabled": true
+				}
+			`,
+			wantStatusCode: http.StatusNotFound,
+			wantIsEnabled:  false,
+			wantErrCode:    api.ErrCodeResourceNotFound,
+			wantErrDetail:  api.ErrDetailFlagNotFound,
+		},
+		{
+			name: "Update flag for another user",
+			path: fmt.Sprintf("/flags/%d", inactiveUserFlag.ID),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", activeUserAccessJWT),
+			},
+			requestBody: `
+				{
+					"is_enabled": true
+				}
+			`,
+			wantStatusCode: http.StatusNotFound,
+			wantIsEnabled:  false,
+			wantErrCode:    api.ErrCodeResourceNotFound,
+			wantErrDetail:  api.ErrDetailFlagNotFound,
+		},
+		{
+			name: "Update non-existent flag",
+			path: "/flags/314159",
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", activeUserAccessJWT),
+			},
+			requestBody: `
+				{
+					"is_enabled": true
+				}
+			`,
+			wantStatusCode: http.StatusNotFound,
+			wantIsEnabled:  false,
+			wantErrCode:    api.ErrCodeResourceNotFound,
+			wantErrDetail:  api.ErrDetailFlagNotFound,
+		},
+		{
+			name: "Update flag with invalid is_enabled",
+			path: fmt.Sprintf("/flags/%d", activeUserFlag.ID),
+			headers: map[string]string{
+				"Authorization": fmt.Sprintf("Bearer %s", activeUserAccessJWT),
+			},
+			requestBody: `
+				{
+					"is_enabled": "invalid"
+				}
+			`,
+			wantStatusCode: http.StatusBadRequest,
+			wantIsEnabled:  false,
+			wantErrCode:    api.ErrCodeInvalidRequest,
+			wantErrDetail:  api.ErrDetailInvalidRequestData,
+		},
+		{
+			name:    "Update flag without authentication",
+			path:    fmt.Sprintf("/flags/%d", activeUserFlag.ID),
+			headers: map[string]string{},
+			requestBody: `
+				{
+					"is_enabled": true
+				}
+			`,
+			wantStatusCode: http.StatusUnauthorized,
+			wantIsEnabled:  false,
+			wantErrCode:    api.ErrCodeMissingCredentials,
+			wantErrDetail:  api.ErrDetailMissingCredentials,
+		},
+	}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			req, err := http.NewRequest(
+				http.MethodPut,
+				TestServerURL+testcase.path,
+				bytes.NewReader([]byte(testcase.requestBody)),
+			)
+			require.NoError(t, err)
+
+			for key, value := range testcase.headers {
+				req.Header.Add(key, value)
+			}
+
+			updatedAt := time.Now().UTC()
+			res, err := httpClient.Do(req)
+			require.NoError(t, err)
+			t.Cleanup(func() {
+				err := res.Body.Close()
+				require.NoError(t, err)
+			})
+
+			require.Equal(t, testcase.wantStatusCode, res.StatusCode)
+			if httputils.IsHTTPSuccess(testcase.wantStatusCode) {
+				var updateFlagsResp api.UpdateFlagResponse
+				err = json.NewDecoder(res.Body).Decode(&updateFlagsResp)
+				require.NoError(t, err)
+
+				require.Equal(t, activeUserFlag.ID, updateFlagsResp.ID)
+				require.Equal(t, activeUser.UUID, updateFlagsResp.UserUUID)
+				require.Equal(t, activeUserFlag.Name, updateFlagsResp.Name)
+				require.Equal(t, testcase.wantIsEnabled, updateFlagsResp.IsEnabled)
+				require.Equal(t, activeUserFlag.CreatedAt, updateFlagsResp.CreatedAt)
+				testkit.RequireTimeAlmostEqual(t, updatedAt, updateFlagsResp.UpdatedAt)
+			} else {
+				var errResp api.ErrorResponse
+				err = json.NewDecoder(res.Body).Decode(&errResp)
+				require.NoError(t, err)
+
+				require.Equal(t, testcase.wantErrCode, errResp.Code)
+				require.Equal(t, testcase.wantErrDetail, errResp.Detail)
+			}
+		})
+	}
 }
