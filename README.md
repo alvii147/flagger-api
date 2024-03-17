@@ -1,3 +1,5 @@
+[![Support Palestine Banner](https://raw.githubusercontent.com/Safouene1/support-palestine-banner/master/banner-support.svg)](https://www.pcrf.net/)
+
 <p align="center">
     <img alt="Flagger Logo" src="docs/img/logo512.png" width=350 />
 </p>
@@ -8,7 +10,7 @@
 
 <div align="center">
 
-[![](https://img.shields.io/github/actions/workflow/status/alvii147/flagger-api/github-ci.yml?branch=main&label=github%20ci&logo=github)](https://github.com/alvii147/flagger-api/actions) [![](https://goreportcard.com/badge/github.com/alvii147/flagger-api)](https://goreportcard.com/report/github.com/alvii147/flagger-api)
+[![](https://img.shields.io/github/actions/workflow/status/alvii147/flagger-api/github-ci.yml?branch=main&label=GitHub%20CI&logo=github)](https://github.com/alvii147/flagger-api/actions) [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause) [![](https://goreportcard.com/badge/github.com/alvii147/flagger-api)](https://goreportcard.com/report/github.com/alvii147/flagger-api)
 
 </div>
 
