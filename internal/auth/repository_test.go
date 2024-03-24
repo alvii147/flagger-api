@@ -577,6 +577,181 @@ func TestRepositoryListActiveAPIKeysByPrefixEmpty(t *testing.T) {
 	}
 }
 
+func TestRepositoryUpdateAPIKeySuccess(t *testing.T) {
+	t.Parallel()
+
+	startingName := "APIKeyName"
+	updatedName := "UpdatedAPIKeyName"
+	expiresAtNextMonth := pgtype.Timestamp{
+		Time:  time.Now().UTC().AddDate(0, 1, 0),
+		Valid: true,
+	}
+	expiresAtNextYear := pgtype.Timestamp{
+		Time:  time.Now().UTC().AddDate(1, 0, 0),
+		Valid: true,
+	}
+	expiresAtNull := pgtype.Timestamp{
+		Valid: false,
+	}
+
+	testcases := []struct {
+		name              string
+		startingName      string
+		updatedName       *string
+		startingExpiresAt pgtype.Timestamp
+		updatedExpiresAt  *pgtype.Timestamp
+		wantName          string
+		wantExpiresAt     pgtype.Timestamp
+	}{
+		{
+			name:              "Update name, update expires at from valid date to valid date",
+			startingName:      startingName,
+			updatedName:       &updatedName,
+			startingExpiresAt: expiresAtNextMonth,
+			updatedExpiresAt:  &expiresAtNextYear,
+			wantName:          updatedName,
+			wantExpiresAt:     expiresAtNextYear,
+		},
+		{
+			name:              "Update name only",
+			startingName:      startingName,
+			updatedName:       &updatedName,
+			startingExpiresAt: expiresAtNextMonth,
+			updatedExpiresAt:  nil,
+			wantName:          updatedName,
+			wantExpiresAt:     expiresAtNextMonth,
+		},
+		{
+			name:              "Update name, update expires at from null to valid date",
+			startingName:      startingName,
+			updatedName:       &updatedName,
+			startingExpiresAt: expiresAtNull,
+			updatedExpiresAt:  &expiresAtNextYear,
+			wantName:          updatedName,
+			wantExpiresAt:     expiresAtNextYear,
+		},
+		{
+			name:              "Update name, update expires at from valid date to null",
+			startingName:      startingName,
+			updatedName:       &updatedName,
+			startingExpiresAt: expiresAtNextMonth,
+			updatedExpiresAt:  &expiresAtNull,
+			wantName:          updatedName,
+			wantExpiresAt:     expiresAtNull,
+		},
+	}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+				u.IsActive = true
+			})
+
+			apiKey, _ := testkitinternal.MustCreateUserAPIKey(t, user.UUID, func(k *auth.APIKey) {
+				k.Name = testcase.startingName
+				k.ExpiresAt = testcase.startingExpiresAt
+			})
+
+			dbPool := testkitinternal.RequireCreateDatabasePool(t)
+			dbConn := testkitinternal.RequireCreateDatabaseConn(t, dbPool, context.Background())
+			repo := auth.NewRepository()
+
+			updatedAPIKey, err := repo.UpdateAPIKey(dbConn, apiKey.ID, user.UUID, testcase.updatedName, testcase.updatedExpiresAt)
+			require.NoError(t, err)
+
+			require.Equal(t, apiKey.ID, updatedAPIKey.ID)
+			require.Equal(t, user.UUID, updatedAPIKey.UserUUID)
+			require.Equal(t, apiKey.Prefix, updatedAPIKey.Prefix)
+			require.Equal(t, apiKey.HashedKey, updatedAPIKey.HashedKey)
+			require.Equal(t, testcase.wantName, updatedAPIKey.Name)
+			require.Equal(t, apiKey.CreatedAt, updatedAPIKey.CreatedAt)
+			require.Equal(t, testcase.wantExpiresAt.Valid, updatedAPIKey.ExpiresAt.Valid)
+			if testcase.wantExpiresAt.Valid {
+				testkit.RequireTimeAlmostEqual(t, testcase.wantExpiresAt.Time, updatedAPIKey.ExpiresAt.Time)
+			}
+		})
+	}
+}
+
+func TestRepositoryUpdateAPIKeyError(t *testing.T) {
+	t.Parallel()
+
+	updatedName := "UpdatedAPIKeyName"
+	updatedExpiresAt := pgtype.Timestamp{
+		Time:  time.Now().UTC().AddDate(1, 0, 0),
+		Valid: true,
+	}
+
+	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = true
+	})
+
+	activeUserAPIKey, _ := testkitinternal.MustCreateUserAPIKey(t, activeUser.UUID, func(k *auth.APIKey) {
+		k.Name = "APIKeyName"
+		k.ExpiresAt = pgtype.Timestamp{
+			Time:  time.Now().UTC().AddDate(0, 1, 0),
+			Valid: true,
+		}
+	})
+
+	inactiveUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
+		u.IsActive = false
+	})
+
+	inactiveUserAPIKey, _ := testkitinternal.MustCreateUserAPIKey(t, inactiveUser.UUID, func(k *auth.APIKey) {
+		k.Name = "APIKeyName"
+		k.ExpiresAt = pgtype.Timestamp{
+			Time:  time.Now().UTC().AddDate(0, 1, 0),
+			Valid: true,
+		}
+	})
+
+	testcases := []struct {
+		name             string
+		apiKeyID         int
+		userUUID         string
+		updatedName      *string
+		updatedExpiresAt *pgtype.Timestamp
+	}{
+		{
+			name:             "Update neither name nor expires at",
+			apiKeyID:         activeUserAPIKey.ID,
+			userUUID:         activeUser.UUID,
+			updatedName:      nil,
+			updatedExpiresAt: nil,
+		},
+		{
+			name:             "Update non-existent API key",
+			apiKeyID:         314159,
+			userUUID:         activeUser.UUID,
+			updatedName:      &updatedName,
+			updatedExpiresAt: &updatedExpiresAt,
+		},
+		{
+			name:             "Update API key for inactive user",
+			apiKeyID:         inactiveUserAPIKey.ID,
+			userUUID:         inactiveUser.UUID,
+			updatedName:      &updatedName,
+			updatedExpiresAt: &updatedExpiresAt,
+		},
+	}
+
+	for _, testcase := range testcases {
+		t.Run(testcase.name, func(t *testing.T) {
+			t.Parallel()
+
+			dbPool := testkitinternal.RequireCreateDatabasePool(t)
+			dbConn := testkitinternal.RequireCreateDatabaseConn(t, dbPool, context.Background())
+			repo := auth.NewRepository()
+
+			_, err := repo.UpdateAPIKey(dbConn, testcase.apiKeyID, testcase.userUUID, testcase.updatedName, testcase.updatedExpiresAt)
+			require.ErrorIs(t, err, errutils.ErrDatabaseNoRowsAffected, err)
+		})
+	}
+}
+
 func TestRepositoryDeleteAPIKeySuccess(t *testing.T) {
 	t.Parallel()
 

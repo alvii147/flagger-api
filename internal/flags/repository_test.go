@@ -255,7 +255,7 @@ func TestRepositoryListFlagsByUserUUIDInactiveUser(t *testing.T) {
 	require.Empty(t, userFlags)
 }
 
-func TestRepositoryUpdateFlagByIDSuccess(t *testing.T) {
+func TestRepositoryUpdateFlagSuccess(t *testing.T) {
 	t.Parallel()
 
 	user, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
@@ -279,7 +279,7 @@ func TestRepositoryUpdateFlagByIDSuccess(t *testing.T) {
 	}
 
 	updatedAt := time.Now().UTC()
-	updatedFlag, err := repo.UpdateFlagByID(dbConn, flag)
+	updatedFlag, err := repo.UpdateFlag(dbConn, flag)
 	require.NoError(t, err)
 
 	require.Equal(t, flag.ID, updatedFlag.ID)
@@ -290,7 +290,7 @@ func TestRepositoryUpdateFlagByIDSuccess(t *testing.T) {
 	testkit.RequireTimeAlmostEqual(t, updatedAt, updatedFlag.UpdatedAt)
 }
 
-func TestRepositoryUpdateFlagByIDError(t *testing.T) {
+func TestRepositoryUpdateFlagError(t *testing.T) {
 	t.Parallel()
 
 	activeUser, _ := testkitinternal.MustCreateUser(t, func(u *auth.User) {
@@ -334,7 +334,7 @@ func TestRepositoryUpdateFlagByIDError(t *testing.T) {
 			}
 
 			dbConn := testkitinternal.RequireCreateDatabaseConn(t, dbPool, context.Background())
-			_, err := repo.UpdateFlagByID(dbConn, flag)
+			_, err := repo.UpdateFlag(dbConn, flag)
 			require.ErrorIs(t, err, errutils.ErrDatabaseNoRowsAffected)
 		})
 	}

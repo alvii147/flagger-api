@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/alvii147/flagger-api/pkg/errutils"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -21,6 +23,7 @@ type Repository interface {
 	CreateAPIKey(dbConn *pgxpool.Conn, apiKey *APIKey) (*APIKey, error)
 	ListAPIKeysByUserUUID(dbConn *pgxpool.Conn, userUUID string) ([]*APIKey, error)
 	ListActiveAPIKeysByPrefix(dbConn *pgxpool.Conn, prefix string) ([]*APIKey, error)
+	UpdateAPIKey(dbConn *pgxpool.Conn, apiKeyID int, userUUID string, name *string, expiresAt *pgtype.Timestamp) (*APIKey, error)
 	DeleteAPIKey(dbConn *pgxpool.Conn, apiKeyID int, userUUID string) error
 }
 
@@ -431,6 +434,82 @@ WHERE
 	}
 
 	return apiKeys, nil
+}
+
+// UpdateAPIKey updates an API key's name and expiration date.
+// If no  API key is affected, error is returned.
+func (repo *repository) UpdateAPIKey(
+	dbConn *pgxpool.Conn,
+	apiKeyID int,
+	userUUID string,
+	name *string,
+	expiresAt *pgtype.Timestamp,
+) (*APIKey, error) {
+	if name == nil && expiresAt == nil {
+		return nil, fmt.Errorf("UpdateUser failed, all attributes are nil: %w", errutils.ErrDatabaseNoRowsAffected)
+	}
+
+	updatedAPIKey := &APIKey{}
+
+	q := `
+UPDATE
+	APIKey k
+SET
+	name = COALESCE($1, name),
+	expires_at = CASE WHEN $2 THEN $3 ELSE expires_at END
+FROM
+	"User" u
+WHERE
+	k.id = $4
+	AND k.user_uuid = $5
+	AND k.user_uuid = u.uuid
+	AND u.is_active = TRUE
+RETURNING
+	k.id,
+	k.user_uuid,
+	k.prefix,
+	k.hashed_key,
+	k.name,
+	k.created_at,
+	k.expires_at;
+	`
+
+	shouldUpdateExpiresAt := false
+	var updatedExpiresAt *time.Time
+	if expiresAt != nil {
+		shouldUpdateExpiresAt = true
+		if expiresAt.Valid {
+			updatedExpiresAt = &expiresAt.Time
+		}
+	}
+
+	err := dbConn.QueryRow(
+		context.Background(),
+		q,
+		name,
+		shouldUpdateExpiresAt,
+		updatedExpiresAt,
+		apiKeyID,
+		userUUID,
+	).Scan(
+		&updatedAPIKey.ID,
+		&updatedAPIKey.UserUUID,
+		&updatedAPIKey.Prefix,
+		&updatedAPIKey.HashedKey,
+		&updatedAPIKey.Name,
+		&updatedAPIKey.CreatedAt,
+		&updatedAPIKey.ExpiresAt,
+	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("UpdateAPIKey failed: %w", errutils.ErrDatabaseNoRowsAffected)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("UpdateAPIKey failed to dbConn.Scan: %w", err)
+	}
+
+	return updatedAPIKey, nil
 }
 
 // DeleteAPIKey deletes API key by ID.

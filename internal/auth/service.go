@@ -23,6 +23,7 @@ type Service interface {
 	CreateUser(ctx context.Context, wg *sync.WaitGroup, email string, password string, firstName string, lastName string) (*User, error)
 	ActivateUser(ctx context.Context, token string) error
 	GetCurrentUser(ctx context.Context) (*User, error)
+	UpdateUser(ctx context.Context, firstName *string, lastName *string) (*User, error)
 	CreateJWT(ctx context.Context, email string, password string) (string, string, error)
 	RefreshJWT(ctx context.Context, token string) (string, error)
 	CreateAPIKey(ctx context.Context, name string, expiresAt pgtype.Timestamp) (*APIKey, string, error)
@@ -169,6 +170,33 @@ func (svc *service) GetCurrentUser(ctx context.Context) (*User, error) {
 			err = fmt.Errorf("GetCurrentUser failed to svc.repository.GetUserByUUID, %w: %w", errutils.ErrUserNotFound, err)
 		default:
 			err = fmt.Errorf("GetCurrentUser failed to svc.repository.GetUserByUUID: %w", err)
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
+
+// UpdateUser updates a User's first and last names.
+func (svc *service) UpdateUser(ctx context.Context, firstName *string, lastName *string) (*User, error) {
+	userUUID, ok := ctx.Value(AuthContextKeyUserUUID).(string)
+	if !ok {
+		return nil, errors.New("UpdateUser failed to ctx.Value user UUID from ctx")
+	}
+
+	dbConn, err := svc.dbPool.Acquire(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("UpdateUser failed to svc.dbPool.Acquire: %w", err)
+	}
+	defer dbConn.Release()
+
+	user, err := svc.repository.UpdateUser(dbConn, userUUID, firstName, lastName)
+	if err != nil {
+		switch {
+		case errors.Is(err, errutils.ErrDatabaseNoRowsAffected):
+			err = fmt.Errorf("UpdateUser failed to svc.repository.UpdateUser, %w: %w", errutils.ErrUserNotFound, err)
+		default:
+			err = fmt.Errorf("UpdateUser failed to svc.repository.UpdateUser: %w", err)
 		}
 		return nil, err
 	}

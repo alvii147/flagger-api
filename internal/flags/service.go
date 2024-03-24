@@ -159,13 +159,13 @@ func (svc *service) UpdateFlag(ctx context.Context, flagID int, isEnabled bool) 
 		IsEnabled: isEnabled,
 	}
 
-	flag, err = svc.repository.UpdateFlagByID(dbConn, flag)
+	flag, err = svc.repository.UpdateFlag(dbConn, flag)
 	if err != nil {
 		switch {
 		case errors.Is(err, errutils.ErrDatabaseNoRowsAffected):
-			err = fmt.Errorf("UpdateFlag failed to svc.repository.UpdateFlagByID, %w: %w", errutils.ErrFlagNotFound, err)
+			err = fmt.Errorf("UpdateFlag failed to svc.repository.UpdateFlag, %w: %w", errutils.ErrFlagNotFound, err)
 		default:
-			err = fmt.Errorf("UpdateFlag failed to svc.repository.UpdateFlagByID: %w", err)
+			err = fmt.Errorf("UpdateFlag failed to svc.repository.UpdateFlag: %w", err)
 		}
 		return nil, err
 	}

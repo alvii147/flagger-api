@@ -17,7 +17,7 @@ type Repository interface {
 	GetFlagByID(dbConn *pgxpool.Conn, flagID int, userUUID string) (*Flag, error)
 	GetFlagByName(dbConn *pgxpool.Conn, flagName string, userUUID string) (*Flag, error)
 	ListFlagsByUserUUID(dbConn *pgxpool.Conn, userUUID string) ([]*Flag, error)
-	UpdateFlagByID(dbConn *pgxpool.Conn, flag *Flag) (*Flag, error)
+	UpdateFlag(dbConn *pgxpool.Conn, flag *Flag) (*Flag, error)
 }
 
 // repository implements Repository.
@@ -217,9 +217,9 @@ WHERE
 	return flags, nil
 }
 
-// UpdateFlagByID updates a Flag's name and enabled state.
+// UpdateFlag updates a Flag's enabled state.
 // If no Flag is affected, error is returned.
-func (repo *repository) UpdateFlagByID(dbConn *pgxpool.Conn, flag *Flag) (*Flag, error) {
+func (repo *repository) UpdateFlag(dbConn *pgxpool.Conn, flag *Flag) (*Flag, error) {
 	updatedFlag := &Flag{}
 
 	q := `
@@ -259,11 +259,11 @@ RETURNING
 	)
 
 	if errors.Is(err, pgx.ErrNoRows) {
-		return nil, fmt.Errorf("UpdateFlagByID failed: %w", errutils.ErrDatabaseNoRowsAffected)
+		return nil, fmt.Errorf("UpdateFlag failed: %w", errutils.ErrDatabaseNoRowsAffected)
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("UpdateFlagByID failed to dbConn.Scan: %w", err)
+		return nil, fmt.Errorf("UpdateFlag failed to dbConn.Scan: %w", err)
 	}
 
 	return updatedFlag, nil
